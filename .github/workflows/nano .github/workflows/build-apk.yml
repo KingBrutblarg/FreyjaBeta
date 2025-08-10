@@ -1,5 +1,4 @@
 name: Build FreyjaBeta APK
-
 on:
   workflow_dispatch:
 
@@ -8,20 +7,22 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Set up JDK
-        uses: actions/setup-java@v3
+        uses: actions/setup-java@v4
         with:
           java-version: '17'
           distribution: 'temurin'
 
-      - name: Decode keystore
-        run: |
-          echo "$SIGNING_KEY" | base64 --decode > my-release-key.keystore
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+        with:
+          api-level: 34
+          build-tools: "34.0.0"
 
-      - name: Build Release APK
-        run: ./gradlew assembleRelease
+      - name: Build Release APK (unsigned)
+        run: ./gradlew :app:assembleRelease
 
       - name: Sign APK
         uses: r0adkll/sign-android-release@v1
@@ -32,9 +33,11 @@ jobs:
           keyStorePassword: ${{ secrets.KEYSTORE_PASSWORD }}
           keyPassword: ${{ secrets.KEY_PASSWORD }}
 
-      - name: Upload Release APK
-        uses: softprops/action-gh-release@v1
+      - name: Publish Release with APK
+        uses: softprops/action-gh-release@v2
         with:
-          files: app/build/outputs/apk/release/app-release-signed.apk
+          tag_name: v0.9-${{ github.run_number }}
+          name: "Freyja Beta v0.9 — Build ${{ github.run_number }}"
+          files: app/build/outputs/apk/release/*signed.apk
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
