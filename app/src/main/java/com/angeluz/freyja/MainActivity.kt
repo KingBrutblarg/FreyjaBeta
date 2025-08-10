@@ -58,3 +58,14 @@ class MainActivity : ComponentActivity() {
         }
     }
 }
+
+binding.btnInvoke.setOnClickListener {
+    val run = Intent("com.termux.app.RUN_COMMAND").apply {
+        setClassName("com.termux", "com.termux.app.RunCommandService")
+        putExtra("com.termux.RUN_COMMAND_PATH", "/data/data/com.termux/files/usr/bin/bash")
+        putExtra("com.termux.RUN_COMMAND_ARGUMENTS", arrayOf("-lc", "termux-toast 'Hola desde Freyja'"))
+        putExtra("com.termux.RUN_COMMAND_BACKGROUND", false) // tráete Termux al frente para ver qué pasa
+        putExtra("com.termux.RUN_COMMAND_WORKDIR", "/data/data/com.termux/files/home")
+    }
+    try { startService(run) } catch (e: Exception) { e.printStackTrace() }
+}
