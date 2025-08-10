@@ -19,7 +19,21 @@ class MainActivity : ComponentActivity() {
 
         // --- BOTÓN INVOCAR VOZ (PRUEBA TOAST) ---
         binding.btnInvoke.setOnClickListener {
-            val run = Intent("com.termux.app.RUN_COMMAND").apply {
+            val run = Intent("com.termux.app.RUN_COMMAND").apply { binding.btnInvoke.setOnClickListener {
+    val run = Intent("com.termux.RUN_COMMAND").apply {     // <- acción correcta
+        setClassName("com.termux", "com.termux.app.RunCommandService")
+        putExtra("com.termux.RUN_COMMAND_PATH",
+            "/data/data/com.termux/files/usr/bin/bash")
+        putExtra("com.termux.RUN_COMMAND_ARGUMENTS",
+            arrayOf("-lc", "termux-tts-speak 'Hola desde Freyja'"))
+        putExtra("com.termux.RUN_COMMAND_BACKGROUND", false) // primero visible
+        putExtra("com.termux.RUN_COMMAND_WORKDIR",
+            "/data/data/com.termux/files/home")
+    }
+    try { startService(run) } catch (e: Exception) { e.printStackTrace() }
+}
+
+
                 setClassName("com.termux", "com.termux.app.RunCommandService")
                 putExtra("com.termux.RUN_COMMAND_PATH",
                     "/data/data/com.termux/files/usr/bin/bash")
