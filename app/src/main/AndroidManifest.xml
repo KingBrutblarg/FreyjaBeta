@@ -22,11 +22,13 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.Material3.DayNight.NoActionBar">
 
+        <!-- Servicio principal -->
         <service
             android:name=".FreyjaService"
             android:exported="false"
             android:foregroundServiceType="microphone|dataSync" />
 
+        <!-- Arranque automático al encender el dispositivo -->
         <receiver
             android:name=".BootCompletedReceiver"
             android:enabled="true"
@@ -36,6 +38,7 @@
             </intent-filter>
         </receiver>
 
+        <!-- Actividad principal -->
         <activity
             android:name=".MainActivity"
             android:exported="true">
@@ -47,8 +50,3 @@
 
     </application>
 </manifest>
-
-<!-- AndroidManifest.xml, fuera del <application> -->
-<queries>
-    <package android:name="com.termux"/>
-</queries>
