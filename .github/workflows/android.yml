@@ -5,7 +5,6 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -20,7 +19,6 @@ jobs:
       - name: Make gradlew executable
         run: chmod +x ./gradlew
 
-      # Si NO subes keystore, compila Debug; si subes secretos, compila Release firmado
       - name: Build (Debug or Release)
         run: |
           if [ -n "${{ secrets.KEYSTORE_BASE64 }}" ]; then
