@@ -1,9 +1,11 @@
 package com.angeluz.freyja
 
-import android.content.ActivityNotFoundException
-import android.content.Intent
+import
 import android.os.Bundle
 import android.widget.Toast
+import android.content.Intent
+import android.content.ActivityNotFoundException
+import android.content.Context
 import androidx.activity.ComponentActivity
 import com.angeluz.freyja.databinding.ActivityMainBinding
 import android.content.Context
