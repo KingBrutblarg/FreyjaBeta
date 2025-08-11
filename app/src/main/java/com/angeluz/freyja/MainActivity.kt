@@ -6,17 +6,21 @@ import android.os.Bundle
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import com.angeluz.freyja.databinding.ActivityMainBinding
+import android.content.Context
 
 class MainActivity : ComponentActivity() {
 
-    private lateinit var binding: ActivityMainBinding
-    private lateinit var tts: TtsManager
+    // --- Preferencias para recordar el modo de invocación ---
+    companion object {
+        private const val PREFS = "freyja_prefs"
+        private const val KEY_MODE = "invoc_mode"
+    }
 
+    // Modo de invocación: Termux (script), Nativo (TTS local), Remoto (placeholder)
     private enum class InvocMode { TERMUX, NATIVO, REMOTO }
 
-    private val PREFS = "freyja_prefs"
-    private val KEY_MODE = "invocation_mode"
-
+    private lateinit var binding: ActivityMainBinding
+    private lateinit var tts: TtsManager
     private var modoActual: InvocMode = InvocMode.TERMUX
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -36,9 +40,9 @@ class MainActivity : ComponentActivity() {
         // --- Botón INVOCAR VOZ ---
         binding.btnInvoke.setOnClickListener {
             when (modoActual) {
-                InvocMode.TERMUX -> invocarTauriel() // ejecuta ~/invocacion-tauriel.sh en Termux
-                InvocMode.NATIVO -> tts.speak("Invocación recibida")
-                InvocMode.REMOTO -> invocarRemoto("Invocación recibida")
+                InvocMode.TERMUX -> invocarTauriel()                       // ejecuta ~/invocacion-tauriel.sh en Termux
+                InvocMode.NATIVO  -> tts.speak("Invocación recibida")
+                InvocMode.REMOTO  -> invocarRemoto("Invocación recibida")  // placeholder
             }
         }
 
@@ -61,10 +65,10 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    // --------- Invocación TERMUX ----------
+    // -------- Invocación TERMUX --------
     // Requiere en Termux:
-    // 1) ~/.termux/termux.properties con allow-external-apps=true  (y termux-reload-settings)
-    // 2) Script ~/invocacion-tauriel.sh con 'termux-toast' / 'termux-tts-speak' (ya lo tienes)
+    // 1) ~/.termux/termux.properties con allow-external-apps=true  (y `termux-reload-settings`)
+    // 2) Script ~/invocacion-tauriel.sh con 'termux-toast' / 'termux-tts-speak'
     private fun invocarTauriel() {
         val run = Intent("com.termux.RUN_COMMAND").apply {
             setClassName("com.termux", "com.termux.app.RunCommandService")
@@ -74,6 +78,7 @@ class MainActivity : ComponentActivity() {
                 arrayOf("-lc", "~/invocacion-tauriel.sh"))
             putExtra("com.termux.RUN_COMMAND_WORKDIR",
                 "/data/data/com.termux/files/home")
+            // true = en segundo plano (no trae Termux al frente)
             putExtra("com.termux.RUN_COMMAND_BACKGROUND", true)
         }
         try {
@@ -82,19 +87,14 @@ class MainActivity : ComponentActivity() {
         } catch (e: ActivityNotFoundException) {
             Toast.makeText(this, "No encuentro Termux. ¿Está instalado?", Toast.LENGTH_LONG).show()
         } catch (e: SecurityException) {
-            Toast.makeText(
-                this,
-                "Permiso denegado por Termux. Activa allow-external-apps y reinicia Termux.",
-                Toast.LENGTH_LONG
-            ).show()
+            Toast.makeText(this, "Permiso denegado por Termux. Activa allow-external-apps y reinicia Termux.", Toast.LENGTH_LONG).show()
         } catch (e: Exception) {
-            Toast.makeText(this, "Error: ${e.message}", Toast.LENGTH_LONG).show()
+            Toast.makeText(this, "Remoto error: ${e.message}", Toast.LENGTH_LONG).show()
         }
     }
 
-    // --------- Invocación REMOTA ----------
-    // Placeholder: aquí harás la llamada a tu backend (WebSocket/HTTP).
-    // Por ahora mandamos un broadcast interno al servicio para que tengas el “end-to-end”.
+    // -------- Invocación REMOTA (placeholder) --------
+    // De momento solo manda un broadcast interno al servicio para tener el “end-to-end”.
     private fun invocarRemoto(frase: String) {
         try {
             val intent = Intent(this, FreyjaService::class.java).apply {
@@ -108,16 +108,16 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    // --------- Persistencia del modo ----------
+    // ---------- Persistencia del modo ----------
     private fun guardarModo(modo: InvocMode) {
-        getSharedPreferences(PREFS, MODE_PRIVATE)
+        getSharedPreferences(PREFS, Context.MODE_PRIVATE)
             .edit()
             .putString(KEY_MODE, modo.name)
             .apply()
     }
 
     private fun cargarModo(): InvocMode {
-        val name = getSharedPreferences(PREFS, MODE_PRIVATE)
+        val name = getSharedPreferences(PREFS, Context.MODE_PRIVATE)
             .getString(KEY_MODE, InvocMode.TERMUX.name)
         return runCatching { InvocMode.valueOf(name!!) }.getOrDefault(InvocMode.TERMUX)
     }
