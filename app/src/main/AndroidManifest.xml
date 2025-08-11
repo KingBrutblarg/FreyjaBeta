@@ -47,3 +47,8 @@
 
     </application>
 </manifest>
+
+<!-- AndroidManifest.xml, fuera del <application> -->
+<queries>
+    <package android:name="com.termux"/>
+</queries>
