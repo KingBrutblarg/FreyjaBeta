@@ -1,60 +1,43 @@
 package com.angeluz.freyja
 
 import android.content.Intent
+import android.net.Uri
 import android.os.Bundle
+import android.widget.Button
 import android.widget.Toast
-import androidx.activity.ComponentActivity
-import com.angeluz.freyja.databinding.ActivityMainBinding
+import androidx.appcompat.app.AppCompatActivity
 
-class MainActivity : ComponentActivity() {
-
-    private lateinit var binding: ActivityMainBinding
+class MainActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        binding = ActivityMainBinding.inflate(layoutInflater)
-        setContentView(binding.root)
+        setContentView(R.layout.activity_main)
 
-        // Arranca tu servicio en primer plano (como ya hacías)
-        startForegroundService(Intent(this, FreyjaService::class.java))
+        val btnInvocar: Button = findViewById(R.id.btnInvocar)
 
-        // --- BOTÓN INVOCAR VOZ ---
-        binding.btnInvoke.setOnClickListener {
-            // 1) Prueba local para confirmar que el click funciona
-            Toast.makeText(this, "Invocando…", Toast.LENGTH_SHORT).show()
-
-            // 2) Llamada a Termux
-            val run = Intent("com.termux.RUN_COMMAND").apply {
-                setClassName("com.termux", "com.termux.app.RunCommandService")
-                putExtra(
-                    "com.termux.RUN_COMMAND_PATH",
-                    "/data/data/com.termux/files/usr/bin/bash"
-                )
-                putExtra(
-                    "com.termux.RUN_COMMAND_ARGUMENTS",
-                    arrayOf("-lc", "termux-tts-speak 'Tauriel está lista. ¿En qué te ayudo?'")
-                )
-                putExtra("com.termux.RUN_COMMAND_BACKGROUND", true) // 2º plano
-                putExtra(
-                    "com.termux.RUN_COMMAND_WORKDIR",
-                    "/data/data/com.termux/files/home"
-                )
-            }
-
-            try {
-                startService(run)
-                // Confirma que sí llegamos aquí
-                Toast.makeText(this, "Comando enviado a Termux", Toast.LENGTH_SHORT).show()
-            } catch (e: Exception) {
-                Toast.makeText(this, "Error: ${e.message}", Toast.LENGTH_LONG).show()
-                e.printStackTrace()
-            }
+        btnInvocar.setOnClickListener {
+            invocarTauriel()
         }
+    }
 
-        // --- BOTÓN HOTWORD ---
-        binding.btnEnableHotword.setOnClickListener {
-            val intent = Intent(FreyjaService.ACTION_TOGGLE_HOTWORD)
-            sendBroadcast(intent)
+    private fun invocarTauriel() {
+        try {
+            // Script a ejecutar en Termux
+            val scriptPath = "/data/data/com.termux/files/home/invocacion-tauriel.sh"
+
+            val intent = Intent("com.termux.RUN_COMMAND")
+            intent.setClassName("com.termux", "com.termux.app.RunCommandService")
+            intent.putExtra("com.termux.RUN_COMMAND_PATH", scriptPath)
+            intent.putExtra("com.termux.RUN_COMMAND_ARGUMENTS", arrayOf<String>())
+            intent.putExtra("com.termux.RUN_COMMAND_WORKDIR", "/data/data/com.termux/files/home")
+            intent.putExtra("com.termux.RUN_COMMAND_BACKGROUND", false)
+
+            startService(intent)
+
+            Toast.makeText(this, "Invocando a Tauriel… 🌌", Toast.LENGTH_SHORT).show()
+
+        } catch (e: Exception) {
+            Toast.makeText(this, "Error al invocar a Tauriel: ${e.message}", Toast.LENGTH_LONG).show()
         }
     }
 }
