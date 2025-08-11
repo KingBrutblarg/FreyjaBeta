@@ -33,3 +33,14 @@ dependencies {
   implementation("androidx.activity:activity-ktx:1.9.2")
   implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.8.4")
 }
+
+dependencies {
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.8.1")
+    implementation("androidx.datastore:datastore-preferences:1.1.1")
+
+    // Ktor client para HTTP/WebSocket
+    val ktor = "2.3.12"
+    implementation("io.ktor:ktor-client-core:$ktor")
+    implementation("io.ktor:ktor-client-cio:$ktor")
+    implementation("io.ktor:ktor-client-websockets:$ktor")
+}
