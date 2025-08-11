@@ -1,34 +1,44 @@
 <?xml version="1.0" encoding="utf-8"?>
-<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+<manifest
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
     package="com.angeluz.freyja">
 
-    <!-- Visibilidad para Termux (Android 11+) -->
+    <!-- Habilita que la app pueda “ver” a Termux (requerido en Android 11+) -->
     <queries>
         <package android:name="com.termux" />
     </queries>
 
     <!-- Permisos -->
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <!-- Para servicios en primer plano que usan micrófono (Tiramisu/33+) -->
+    <uses-permission
+        android:name="android.permission.FOREGROUND_SERVICE_MICROPHONE"
+        tools:targetApi="33" />
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
     <uses-permission android:name="android.permission.WAKE_LOCK" />
+    <!-- Opcional (Android 13+): notificaciones del servicio -->
+    <uses-permission
+        android:name="android.permission.POST_NOTIFICATIONS"
+        tools:targetApi="33" />
 
     <application
         android:allowBackup="true"
         android:icon="@mipmap/ic_launcher"
         android:label="Freyja (Beta)"
         android:roundIcon="@mipmap/ic_launcher"
-        android:networkSecurityConfig="@xml/network_security_config"
         android:supportsRtl="true"
-        android:theme="@style/Theme.Material3.DayNight.NoActionBar">
+        android:theme="@style/Theme.Material3.DayNight.NoActionBar"
+        android:networkSecurityConfig="@xml/network_security_config">
 
-        <!-- Servicio principal -->
+        <!-- Servicio principal en primer plano -->
         <service
             android:name=".FreyjaService"
             android:exported="false"
             android:foregroundServiceType="microphone|dataSync" />
 
-        <!-- Arranque automático al encender el dispositivo -->
+        <!-- Autoinicio tras reinicio del dispositivo -->
         <receiver
             android:name=".BootCompletedReceiver"
             android:enabled="true"
