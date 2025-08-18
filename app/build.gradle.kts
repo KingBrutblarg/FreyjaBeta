@@ -1,3 +1,4 @@
+apply(from = "signing.gradle.kts")
 plugins {
   id("com.android.application")
   id("org.jetbrains.kotlin.android")
