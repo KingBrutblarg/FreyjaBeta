@@ -20,3 +20,14 @@ FreyjaBeta/
 # Keystore (no subir)
 *.jks
 *.jks.b64
+
+freyja-release.keystore
+freyja-release.keystore.b64
+
+# CI: ignorar script de firma local y keystores
+app/signing.gradle.kts
+*.jks
+*.keystore
+*.keystore.b64
+freyja-release.keystore
+freyja-release.keystore.b64
