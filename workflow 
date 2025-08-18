@@ -1,4 +1,6 @@
+cat > .github/workflows/build-apk.yml <<'YAML'
 name: Build & Release APK
+
 on:
   workflow_dispatch:
   push:
@@ -7,39 +9,52 @@ on:
 jobs:
   build:
     runs-on: ubuntu-22.04
-    steps:
-      - uses: actions/checkout@v4
 
-      - uses: actions/setup-java@v4
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Java 17 (Temurin)
+        uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: '17'
+          cache: gradle
 
-      - name: Set up Android SDK
+      - name: Set up Android SDK (packages)
         uses: android-actions/setup-android@v3
         with:
-          api-level: 34
-          build-tools: "34.0.0"
-          ndk: 25.1.8937393
+          packages: |
+            build-tools;34.0.0
+            platforms;android-34
+            platform-tools
+            cmdline-tools;latest
 
-      - name: Configure Gradle
+      - name: Configure Gradle cache
         uses: gradle/actions/setup-gradle@v3
 
-      - name: Create local.properties
+      - name: Create local.properties (point SDK)
         run: echo "sdk.dir=$ANDROID_SDK_ROOT" > local.properties
 
-      - name: Make gradlew executable
-        run: chmod +x gradlew
-
+      # Ajusta el nombre del módulo si no es "app"
       - name: Build debug APK
-        run: ./gradlew --no-daemon assembleDebug
+        run: ./gradlew --no-daemon :app:assembleDebug
 
-      - name: Upload APK
+      - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
-          name: app-debug.apk
-          path: app/build/outputs/apk/debug/app-debug.apk
+          name: app-debug
+          path: app/build/outputs/apk/debug/*.apk
+          if-no-files-found: error
 
-git add .github/workflows/build-apk.yml
-git commit -m "Fix: instalación correcta de Android SDK en CI"
-git push
+      # Opcional: crea un Release con el APK
+      - name: Create GitHub Release (optional)
+        if: github.ref == 'refs/heads/main'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: build-${{ github.run_number }}
+          name: "Debug build ${{ github.run_number }}"
+          files: app/build/outputs/apk/debug/*.apk
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+YAML
