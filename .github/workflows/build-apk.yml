@@ -81,3 +81,8 @@ jobs:
           files: |
             app/build/outputs/apk/debug/*.apk
             app/build/outputs/apk/release/*.apk
+
+- name: Decode keystore from secret
+  run: |
+    printf '%s' "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 --decode > release.keystore
+    echo "ANDROID_KEYSTORE_PATH=$PWD/release.keystore" >> $GITHUB_ENV
