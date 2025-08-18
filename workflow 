@@ -39,3 +39,7 @@ jobs:
         with:
           name: app-debug.apk
           path: app/build/outputs/apk/debug/app-debug.apk
+
+git add .github/workflows/build-apk.yml
+git commit -m "Fix: instalación correcta de Android SDK en CI"
+git push
