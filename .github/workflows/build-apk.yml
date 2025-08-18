@@ -32,7 +32,7 @@ jobs:
         run: chmod +x gradlew
 
       - name: Build debug APK (verbose)
-        run: ./gradlew --no-daemon -i -s compileDebugKotlin
+        run: ./gradlew --no-daemon -i -s :app:assembleDebug
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
