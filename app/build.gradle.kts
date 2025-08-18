@@ -62,9 +62,4 @@ dependencies {
   val ktor = "2.3.12"
   implementation("io.ktor:ktor-client-core:$ktor")
   implementation("io.ktor:ktor-client-cio:$ktor")
-  implementation("io.ktor:ktor-client-websockets:$ktor")
-
-  implementation("com.squareup.okhttp3:okhttp:4.12.0")
-  implementation("com.squareup.okio:okio:3.6.0")
-  // implementation("com.squareup.okhttp3:logging-interceptor:4.12.0")
-}
+  implementation("io.ktor:ktor-client-websockets:$
