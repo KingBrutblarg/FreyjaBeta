@@ -16,3 +16,7 @@ local.properties
 .DS_Store
 
 FreyjaBeta/
+
+# Keystore (no subir)
+*.jks
+*.jks.b64
