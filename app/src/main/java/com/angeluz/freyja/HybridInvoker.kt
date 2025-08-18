@@ -3,8 +3,9 @@ package com.angeluz.freyja
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
-import android.net.Uri
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.withContext
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -63,23 +64,25 @@ class HybridInvoker(
     }
 
     private suspend fun speakRemote(text: String): Result<String> = runCatching {
-        val url = Prefs.urlFlow(context).first().ifEmpty {
-            throw IllegalStateException("URL remota no configurada")
-        }
-        val token = Prefs.tokenFlow(context).first()
+        withContext(Dispatchers.IO) {
+            val url = Prefs.urlFlow(context).first().ifEmpty {
+                error("URL remota no configurada")
+            }
+            val token = Prefs.tokenFlow(context).first()
 
-        val body = """{"text":${text.asJsonString()}}""".toRequestBody(json)
-        val req = Request.Builder()
-            .url(url.ensureHttpScheme())
-            .addHeader("Accept", "application/json")
-            .apply { if (token.isNotEmpty()) addHeader("Authorization", "Bearer $token") }
-            .post(body)
-            .build()
+            val body = """{"text":${text.asJsonString()}}""".toRequestBody(json)
+            val req = Request.Builder()
+                .url(url.ensureHttpScheme())
+                .addHeader("Accept", "application/json")
+                .apply { if (token.isNotEmpty()) addHeader("Authorization", "Bearer $token") }
+                .post(body)
+                .build()
 
-        client.newCall(req).execute().use { rsp ->
-            if (!rsp.isSuccessful) error("HTTP ${rsp.code}")
+            client.newCall(req).execute().use { rsp ->
+                if (!rsp.isSuccessful) error("HTTP ${rsp.code}")
+            }
+            "REMOTE"
         }
-        "REMOTE"
     }
 
     private fun isTermuxInstalled(): Boolean =
