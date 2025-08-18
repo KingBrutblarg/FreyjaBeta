@@ -15,6 +15,16 @@ android {
     versionName = "0.9"
   }
 
+  // Firma (lee credenciales del entorno que pone el workflow)
+  signingConfigs {
+    create("release") {
+      storeFile = file(System.getenv("ANDROID_KEYSTORE_PATH") ?: "keystore.jks")
+      storePassword = System.getenv("ANDROID_KEYSTORE_PASSWORD")
+      keyAlias = System.getenv("ANDROID_KEY_ALIAS")
+      keyPassword = System.getenv("ANDROID_KEY_ALIAS_PASSWORD")
+    }
+  }
+
   buildTypes {
     release {
       isMinifyEnabled = false
@@ -22,8 +32,11 @@ android {
         getDefaultProguardFile("proguard-android-optimize.txt"),
         "proguard-rules.pro"
       )
+      signingConfig = signingConfigs.getByName("release")
     }
-    debug { isDebuggable = true }
+    debug {
+      isDebuggable = true
+    }
   }
 
   compileOptions {
@@ -31,6 +44,7 @@ android {
     targetCompatibility = JavaVersion.VERSION_17
   }
   kotlinOptions { jvmTarget = "17" }
+
   buildFeatures { viewBinding = true }
 }
 
@@ -46,15 +60,14 @@ dependencies {
   implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.8.1")
   implementation("androidx.datastore:datastore-preferences:1.1.1")
 
-  // Ktor client (si lo usas en alguna parte)
+  // Ktor (si lo usas)
   val ktor = "2.3.12"
   implementation("io.ktor:ktor-client-core:$ktor")
   implementation("io.ktor:ktor-client-cio:$ktor")
   implementation("io.ktor:ktor-client-websockets:$ktor")
 
-  // OkHttp (necesario por los errores de HybridInvoker)
+  // OkHttp (para HybridInvoker)
   implementation("com.squareup.okhttp3:okhttp:4.12.0")
   implementation("com.squareup.okio:okio:3.6.0")
-  // opcional:
-  // implementation("com.squareup.okhttp3:logging-interceptor:4.12.0")
+  // implementation("com.squareup.okhttp3:logging-interceptor:4.12.0") // opcional
 }
