@@ -1,3 +1,12 @@
+# Ignorar entornos virtuales, binarios y modelos pesados
+venv/
+bin/
+__pycache__/
+*.pyc
+*.log
+
+# Carpeta de modelos IA (se guarda en Drive)
+Freyja_beta/
 .gradle/
 build/
 app/build/
