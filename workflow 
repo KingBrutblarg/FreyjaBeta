@@ -22,3 +22,8 @@ jobs:
           name: app-debug.apk
           path: app/build/outputs/apk/debug/app-debug.apk
 YAML
+- name: Set up Android SDK
+      uses: android-actions/setup-android@v3
+      with:
+        api-level: 34
+        ndk: 25.1.8937393
