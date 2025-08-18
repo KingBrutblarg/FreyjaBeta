@@ -1,14 +1,12 @@
 package com.angeluz.freyja
 
-import
-import android.os.Bundle
-import android.widget.Toast
-import android.content.Intent
 import android.content.ActivityNotFoundException
 import android.content.Context
+import android.content.Intent
+import android.os.Bundle
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import com.angeluz.freyja.databinding.ActivityMainBinding
-import android.content.Context
 
 class MainActivity : ComponentActivity() {
 
@@ -48,7 +46,7 @@ class MainActivity : ComponentActivity() {
             }
         }
 
-        // Pulsación larga: rotar modo (TERMUX -> NATIVO -> REMOTO -> …)
+        // Pulsación larga: rotar modo (TERMUX -> NATIVO -> REMOTO -> TERMUX)
         binding.btnInvoke.setOnLongClickListener {
             modoActual = when (modoActual) {
                 InvocMode.TERMUX -> InvocMode.NATIVO
@@ -91,12 +89,11 @@ class MainActivity : ComponentActivity() {
         } catch (e: SecurityException) {
             Toast.makeText(this, "Permiso denegado por Termux. Activa allow-external-apps y reinicia Termux.", Toast.LENGTH_LONG).show()
         } catch (e: Exception) {
-            Toast.makeText(this, "Remoto error: ${e.message}", Toast.LENGTH_LONG).show()
+            Toast.makeText(this, "Error: ${e.message}", Toast.LENGTH_LONG).show()
         }
     }
 
     // -------- Invocación REMOTA (placeholder) --------
-    // De momento solo manda un broadcast interno al servicio para tener el “end-to-end”.
     private fun invocarRemoto(frase: String) {
         try {
             val intent = Intent(this, FreyjaService::class.java).apply {
@@ -123,15 +120,6 @@ class MainActivity : ComponentActivity() {
             .getString(KEY_MODE, InvocMode.TERMUX.name)
         return runCatching { InvocMode.valueOf(name!!) }.getOrDefault(InvocMode.TERMUX)
     }
-
-package com.angeluz.freyja
-
-import android.os.Bundle
-import androidx.activity.ComponentActivity
-import androidx.activity.viewModels
-import androidx.core.splashscreen.SplashScreen
-import android.content.Context // solo este Context
-// …tus demás imports, sin volver a importar Context
 
     override fun onDestroy() {
         super.onDestroy()
