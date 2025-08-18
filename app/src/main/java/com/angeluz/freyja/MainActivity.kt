@@ -10,13 +10,11 @@ import com.angeluz.freyja.databinding.ActivityMainBinding
 
 class MainActivity : ComponentActivity() {
 
-    // --- Preferencias para recordar el modo de invocación ---
     companion object {
         private const val PREFS = "freyja_prefs"
         private const val KEY_MODE = "invoc_mode"
     }
 
-    // Modo de invocación: Termux (script), Nativo (TTS local), Remoto (placeholder)
     private enum class InvocMode { TERMUX, NATIVO, REMOTO }
 
     private lateinit var binding: ActivityMainBinding
@@ -40,9 +38,9 @@ class MainActivity : ComponentActivity() {
         // --- Botón INVOCAR VOZ ---
         binding.btnInvoke.setOnClickListener {
             when (modoActual) {
-                InvocMode.TERMUX -> invocarTauriel()                       // ejecuta ~/invocacion-tauriel.sh en Termux
-                InvocMode.NATIVO  -> tts.speak("Invocación recibida")
-                InvocMode.REMOTO  -> invocarRemoto("Invocación recibida")  // placeholder
+                InvocMode.TERMUX -> invocarTauriel()
+                InvocMode.NATIVO -> tts.speak("Invocación recibida")
+                InvocMode.REMOTO -> invocarRemoto("Invocación recibida")
             }
         }
 
@@ -66,9 +64,6 @@ class MainActivity : ComponentActivity() {
     }
 
     // -------- Invocación TERMUX --------
-    // Requiere en Termux:
-    // 1) ~/.termux/termux.properties con allow-external-apps=true  (y `termux-reload-settings`)
-    // 2) Script ~/invocacion-tauriel.sh con 'termux-toast' / 'termux-tts-speak'
     private fun invocarTauriel() {
         val run = Intent("com.termux.RUN_COMMAND").apply {
             setClassName("com.termux", "com.termux.app.RunCommandService")
@@ -78,7 +73,6 @@ class MainActivity : ComponentActivity() {
                 arrayOf("-lc", "~/invocacion-tauriel.sh"))
             putExtra("com.termux.RUN_COMMAND_WORKDIR",
                 "/data/data/com.termux/files/home")
-            // true = en segundo plano (no trae Termux al frente)
             putExtra("com.termux.RUN_COMMAND_BACKGROUND", true)
         }
         try {
