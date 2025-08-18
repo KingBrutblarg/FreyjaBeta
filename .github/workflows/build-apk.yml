@@ -17,12 +17,20 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-22.04
+<<<<<<< HEAD
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
       - name: Set up Java 17
+=======
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Java 17 (Temurin)
+>>>>>>> cefc53e (CI: build & upload debug APK (fixed heredoc))
         uses: actions/setup-java@v4
         with:
           distribution: temurin
@@ -31,6 +39,7 @@ jobs:
       - name: Set up Android SDK
         uses: android-actions/setup-android@v3
         with:
+<<<<<<< HEAD
           cmdline-tools: latest
           packages: |
             platforms;android-34
@@ -42,11 +51,23 @@ jobs:
         uses: gradle/actions/setup-gradle@v3
 
       - name: Write local.properties
+=======
+          api-level: 34
+          build-tools: "34.0.0"
+          cmdline-tools: latest
+
+      - name: Configure Gradle cache
+        uses: gradle/actions/setup-gradle@v3
+
+      - name: Create local.properties (point SDK)
+>>>>>>> cefc53e (CI: build & upload debug APK (fixed heredoc))
         run: echo "sdk.dir=$ANDROID_SDK_ROOT" > local.properties
 
-      - name: Make gradlew executable
-        run: chmod +x gradlew
+      # Si tu módulo NO se llama "app", cambia :app:assembleDebug y la ruta de salida
+      - name: Build debug APK
+        run: ./gradlew --no-daemon :app:assembleDebug
 
+<<<<<<< HEAD
       # Keystore desde secrets -> archivo local y variable de entorno con la ruta
       - name: Write keystore from secret
         env:
@@ -89,3 +110,21 @@ jobs:
           files: |
             app/build/outputs/apk/release/app-release.apk
             app/build/outputs/bundle/release/app-release.aab
+=======
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-debug
+          path: app/build/outputs/apk/debug/*.apk
+          if-no-files-found: error
+
+      - name: Create GitHub Release (optional)
+        if: github.ref == 'refs/heads/main'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: build-${{ github.run_number }}
+          name: "Debug build ${{ github.run_number }}"
+          files: app/build/outputs/apk/debug/*.apk
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+>>>>>>> cefc53e (CI: build & upload debug APK (fixed heredoc))
