@@ -124,6 +124,15 @@ class MainActivity : ComponentActivity() {
         return runCatching { InvocMode.valueOf(name!!) }.getOrDefault(InvocMode.TERMUX)
     }
 
+package com.angeluz.freyja
+
+import android.os.Bundle
+import androidx.activity.ComponentActivity
+import androidx.activity.viewModels
+import androidx.core.splashscreen.SplashScreen
+import android.content.Context // solo este Context
+// …tus demás imports, sin volver a importar Context
+
     override fun onDestroy() {
         super.onDestroy()
         tts.shutdown()
