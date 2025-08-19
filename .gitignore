@@ -31,3 +31,9 @@ app/signing.gradle.kts
 *.keystore.b64
 freyja-release.keystore
 freyja-release.keystore.b64
+
+# CI/keystore (no subir)
+*.p12
+*.b64
+b64parts/
+check.p12
