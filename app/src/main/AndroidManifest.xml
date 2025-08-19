@@ -1,6 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="com.angeluz.freyja">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
     <!-- Visibilidad para Termux (Android 11+) -->
     <queries>
@@ -9,10 +8,10 @@
 
     <!-- Permisos -->
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
-    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
-    <uses-permission android:name="android.permission.RECORD_AUDIO" />
-    <uses-permission android:name="android.permission.WAKE_LOCK" />
-    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission/RECEIVE_BOOT_COMPLETED" />
+    <uses-permission android:name="android.permission/RECORD_AUDIO" />
+    <uses-permission android:name="android.permission/WAKE_LOCK" />
+    <uses-permission android:name="android.permission/INTERNET" />
 
     <application
         android:allowBackup="true"
@@ -21,7 +20,7 @@
         android:roundIcon="@mipmap/ic_launcher"
         android:networkSecurityConfig="@xml/network_security_config"
         android:supportsRtl="true"
-        android:theme="@style/Theme.Material3.DayNight.NoActionBar">
+        android:theme="@style/Theme.Freyja">
 
         <service
             android:name=".FreyjaService"
@@ -45,6 +44,5 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-
     </application>
 </manifest>
