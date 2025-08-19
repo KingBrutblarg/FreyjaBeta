@@ -36,13 +36,7 @@ jobs:
       - name: Create local.properties (point SDK)
         run: echo "sdk.dir=$ANDROID_SDK_ROOT" > local.properties
 
-      # --- Firma: decodifica la keystore del secret y exporta ruta ---
-      - name: Decode keystore from secret
-        run: |
-          printf '%s' "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 --decode > release.keystore
-          echo "ANDROID_KEYSTORE_PATH=$PWD/release.keystore" >> $GITHUB_ENV
-
-      # Debug APK (opcional)
+      # Debug APK
       - name: Build debug APK
         run: ./gradlew --no-daemon :app:assembleDebug
 
@@ -53,22 +47,18 @@ jobs:
           path: app/build/outputs/apk/debug/*.apk
           if-no-files-found: error
 
-      # Release APK firmado
-      - name: Build release APK (signed)
-        env:
-          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
-          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
-          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+      # Release APK sin firmar
+      - name: Build release APK (unsigned)
         run: ./gradlew --no-daemon :app:assembleRelease
 
       - name: Upload release APK
         uses: actions/upload-artifact@v4
         with:
-          name: app-release
+          name: app-release-unsigned
           path: app/build/outputs/apk/release/*.apk
           if-no-files-found: error
 
-      # Publicar Release en GitHub con ambos APKs (requiere RELEASE_TOKEN clásico con repo:*)
+      # Publicar Release en GitHub
       - name: Create GitHub Release
         if: github.ref == 'refs/heads/main'
         uses: softprops/action-gh-release@v2
