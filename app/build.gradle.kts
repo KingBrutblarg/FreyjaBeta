@@ -1,6 +1,3 @@
-cd ~/FreyjaBeta
-
-cat > app/build.gradle.kts <<'EOF'
 plugins {
   id("com.android.application")
   id("org.jetbrains.kotlin.android")
@@ -60,4 +57,3 @@ dependencies {
   implementation("com.squareup.okio:okio:3.6.0")
   // implementation("com.squareup.okhttp3:logging-interceptor:4.12.0")
 }
-EOF
