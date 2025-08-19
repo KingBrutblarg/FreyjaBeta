@@ -1,3 +1,9 @@
+cat > app/build.gradle.kts <<'KTS'
+plugins {
+  id("com.android.application")
+  id("org.jetbrains.kotlin.android")
+}
+
 android {
   namespace = "com.angeluz.freyja"
   compileSdk = 34
@@ -10,35 +16,22 @@ android {
     versionName = "0.9"
   }
 
-  // Firma OPCIONAL: solo si ANDROID_KEYSTORE_PATH viene del entorno
-  val ksPath = System.getenv("ANDROID_KEYSTORE_PATH")
-  if (!ksPath.isNullOrBlank()) {
-    signingConfigs {
-      create("release") {
-        storeFile = file(ksPath)
-        storePassword = System.getenv("ANDROID_KEYSTORE_PASSWORD")
-        keyAlias = System.getenv("ANDROID_KEY_ALIAS")
-        keyPassword = System.getenv("ANDROID_KEY_PASSWORD")
-        storeType = "pkcs12"
-      }
-    }
-  }
-
+  // Build sin firma (release unsigned)
   buildTypes {
-    getByName("release") {
+    release {
       isMinifyEnabled = false
       proguardFiles(
         getDefaultProguardFile("proguard-android-optimize.txt"),
         "proguard-rules.pro"
       )
-      // Solo aplicamos la firma si existe keystore
-      if (!ksPath.isNullOrBlank()) {
-        signingConfig = signingConfigs.getByName("release")
-      }
     }
-    getByName("debug") {
+    debug {
       isDebuggable = true
     }
+  }
+
+  buildFeatures {
+    viewBinding = true
   }
 
   compileOptions {
@@ -46,6 +39,29 @@ android {
     targetCompatibility = JavaVersion.VERSION_17
   }
   kotlinOptions { jvmTarget = "17" }
-
-  buildFeatures { viewBinding = true }
 }
+
+dependencies {
+  implementation("androidx.core:core-ktx:1.13.1")
+  implementation("androidx.appcompat:appcompat:1.7.0")
+  implementation("com.google.android.material:material:1.12.0")
+  implementation("androidx.activity:activity-ktx:1.9.2")
+  implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.8.4")
+
+  implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.8.1")
+  implementation("androidx.datastore:datastore-preferences:1.1.1")
+
+  val ktor = "2.3.12"
+  implementation("io.ktor:ktor-client-core:$ktor")
+  implementation("io.ktor:ktor-client-cio:$ktor")
+  implementation("io.ktor:ktor-client-websockets:$ktor")
+
+  implementation("com.squareup.okhttp3:okhttp:4.12.0")
+  implementation("com.squareup.okio:okio:3.6.0")
+  // implementation("com.squareup.okhttp3:logging-interceptor:4.12.0")
+}
+KTS
+
+git add app/build.gradle.kts
+git commit -m "fix: gradle limpio sin firma + viewBinding"
+git push origin main
