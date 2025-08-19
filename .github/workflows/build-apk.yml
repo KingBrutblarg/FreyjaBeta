@@ -12,8 +12,7 @@ jobs:
   build:
     runs-on: ubuntu-22.04
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
       - name: Set up Java 17 (Temurin)
         uses: actions/setup-java@v4
@@ -36,9 +35,12 @@ jobs:
       - name: Create local.properties (point SDK)
         run: echo "sdk.dir=$ANDROID_SDK_ROOT" > local.properties
 
-      # Debug APK
+      # ---- Build sin firma ----
       - name: Build debug APK
         run: ./gradlew --no-daemon :app:assembleDebug
+
+      - name: Build release APK (unsigned)
+        run: ./gradlew --no-daemon :app:assembleRelease
 
       - name: Upload debug APK
         uses: actions/upload-artifact@v4
@@ -47,27 +49,24 @@ jobs:
           path: app/build/outputs/apk/debug/*.apk
           if-no-files-found: error
 
-      # Release APK sin firmar
-      - name: Build release APK (unsigned)
-        run: ./gradlew --no-daemon :app:assembleRelease
-
-      - name: Upload release APK
+      - name: Upload release APK (unsigned)
         uses: actions/upload-artifact@v4
         with:
           name: app-release-unsigned
-          path: app/build/outputs/apk/release/*.apk
+          path: app/build/outputs/apk/release/*-unsigned.apk
           if-no-files-found: error
 
-      # Publicar Release en GitHub
+      # Opcional: crear un Release en GitHub con ambos APKs (unsigned)
       - name: Create GitHub Release
         if: github.ref == 'refs/heads/main'
         uses: softprops/action-gh-release@v2
         with:
+          # Si no tienes RELEASE_TOKEN, puedes omitir 'token:' y usar GITHUB_TOKEN por defecto
           token: ${{ secrets.RELEASE_TOKEN }}
           tag_name: build-${{ github.run_number }}.${{ github.run_attempt }}
-          name: "Release build ${{ github.run_number }} (attempt ${{ github.run_attempt }})"
+          name: "Build ${{ github.run_number }} (unsigned)"
           make_latest: true
           generate_release_notes: true
           files: |
             app/build/outputs/apk/debug/*.apk
-            app/build/outputs/apk/release/*.apk
+            app/build/outputs/apk/release/*-unsigned.apk
