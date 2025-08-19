@@ -1,4 +1,6 @@
-cat > app/build.gradle.kts <<'KTS'
+cd ~/FreyjaBeta
+
+cat > app/build.gradle.kts <<'EOF'
 plugins {
   id("com.android.application")
   id("org.jetbrains.kotlin.android")
@@ -16,7 +18,7 @@ android {
     versionName = "0.9"
   }
 
-  // Build sin firma (release unsigned)
+  // SIN firma
   buildTypes {
     release {
       isMinifyEnabled = false
@@ -30,15 +32,13 @@ android {
     }
   }
 
-  buildFeatures {
-    viewBinding = true
-  }
-
   compileOptions {
     sourceCompatibility = JavaVersion.VERSION_17
     targetCompatibility = JavaVersion.VERSION_17
   }
   kotlinOptions { jvmTarget = "17" }
+
+  buildFeatures { viewBinding = true }
 }
 
 dependencies {
@@ -60,8 +60,4 @@ dependencies {
   implementation("com.squareup.okio:okio:3.6.0")
   // implementation("com.squareup.okhttp3:logging-interceptor:4.12.0")
 }
-KTS
-
-git add app/build.gradle.kts
-git commit -m "fix: gradle limpio sin firma + viewBinding"
-git push origin main
+EOF
