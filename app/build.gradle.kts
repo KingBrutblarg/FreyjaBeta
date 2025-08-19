@@ -1,8 +1,3 @@
-plugins {
-  id("com.android.application")
-  id("org.jetbrains.kotlin.android")
-}
-
 android {
   namespace = "com.angeluz.freyja"
   compileSdk = 34
@@ -15,27 +10,33 @@ android {
     versionName = "0.9"
   }
 
-  // Firma (lee variables que inyecta el workflow)
-  signingConfigs {
-    create("release") {
-      storeFile = file(System.getenv("ANDROID_KEYSTORE_PATH") ?: "release.keystore")
-      storePassword = System.getenv("ANDROID_KEYSTORE_PASSWORD")
-      keyAlias = System.getenv("ANDROID_KEY_ALIAS")
-      keyPassword = System.getenv("ANDROID_KEY_PASSWORD")
-      storeType = "pkcs12"
+  // Firma OPCIONAL: solo si ANDROID_KEYSTORE_PATH viene del entorno
+  val ksPath = System.getenv("ANDROID_KEYSTORE_PATH")
+  if (!ksPath.isNullOrBlank()) {
+    signingConfigs {
+      create("release") {
+        storeFile = file(ksPath)
+        storePassword = System.getenv("ANDROID_KEYSTORE_PASSWORD")
+        keyAlias = System.getenv("ANDROID_KEY_ALIAS")
+        keyPassword = System.getenv("ANDROID_KEY_PASSWORD")
+        storeType = "pkcs12"
+      }
     }
   }
 
   buildTypes {
-    release {
-      signingConfig = signingConfigs.getByName("release")
+    getByName("release") {
       isMinifyEnabled = false
       proguardFiles(
         getDefaultProguardFile("proguard-android-optimize.txt"),
         "proguard-rules.pro"
       )
+      // Solo aplicamos la firma si existe keystore
+      if (!ksPath.isNullOrBlank()) {
+        signingConfig = signingConfigs.getByName("release")
+      }
     }
-    debug {
+    getByName("debug") {
       isDebuggable = true
     }
   }
@@ -48,18 +49,3 @@ android {
 
   buildFeatures { viewBinding = true }
 }
-
-dependencies {
-  implementation("androidx.core:core-ktx:1.13.1")
-  implementation("androidx.appcompat:appcompat:1.7.0")
-  implementation("com.google.android.material:material:1.12.0")
-  implementation("androidx.activity:activity-ktx:1.9.2")
-  implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.8.4")
-
-  implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.8.1")
-  implementation("androidx.datastore:datastore-preferences:1.1.1")
-
-  val ktor = "2.3.12"
-  implementation("io.ktor:ktor-client-core:$ktor")
-  implementation("io.ktor:ktor-client-cio:$ktor")
-  implementation("io.ktor:ktor-client-websockets:$
