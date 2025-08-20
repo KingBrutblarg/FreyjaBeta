@@ -6,12 +6,11 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write   # necesario si usas el paso de GitHub Release
+  contents: write   # necesario para crear un Release
 
 jobs:
   build:
     runs-on: ubuntu-22.04
-
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -37,33 +36,24 @@ jobs:
       - name: Create local.properties (point SDK)
         run: echo "sdk.dir=$ANDROID_SDK_ROOT" > local.properties
 
-      # 🔑 Decodifica el keystore desde el secret (PKCS12)
+      # 🔑 Decodifica keystore a app/
       - name: Decode keystore
         run: |
-          echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 -d > freyja-release.p12
+          mkdir -p app
+          printf '%s' "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" \
+          | tr -d '\r\n[:space:]' \
+          | base64 -d > app/freyja-release.p12
 
-      # 🧩 Inyecta credenciales en gradle.properties en tiempo de build
-      - name: Inject signing props
-        run: |
-          {
-            echo "RELEASE_STORE_FILE=freyja-release.p12"
-            echo "RELEASE_STORE_PASSWORD=${{ secrets.ANDROID_KEYSTORE_PASSWORD }}"
-            echo "RELEASE_KEY_ALIAS=${{ secrets.ANDROID_KEY_ALIAS }}"
-            echo "RELEASE_KEY_PASSWORD=${{ secrets.ANDROID_KEY_PASSWORD }}"
-          } >> gradle.properties
-
-- name: Decode keystore
-  run: |
-    mkdir -p app
-    printf '%s' "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" \
-    | tr -d '\r\n[:space:]' \
-    | base64 -d > app/freyja-release.p12
-
-      # 🏗️ Compila release firmado (usa signingConfigs del build.gradle.kts)
+      # 🏗️ Build release firmado
       - name: Build release APK (signed)
-        run: ./gradlew --no-daemon :app:assembleRelease
+        run: |
+          ./gradlew --no-daemon :app:assembleRelease \
+            -Pandroid.injected.signing.store.file=app/freyja-release.p12 \
+            -Pandroid.injected.signing.store.password="${{ secrets.ANDROID_KEYSTORE_PASSWORD }}" \
+            -Pandroid.injected.signing.key.alias="${{ secrets.ANDROID_KEY_ALIAS }}" \
+            -Pandroid.injected.signing.key.password="${{ secrets.ANDROID_KEY_PASSWORD }}"
 
-      # 📦 Sube artefacto firmado
+      # 📦 Sube el APK firmado
       - name: Upload signed APK
         uses: actions/upload-artifact@v4
         with:
@@ -71,8 +61,8 @@ jobs:
           path: app/build/outputs/apk/release/*.apk
           if-no-files-found: error
 
-      # 🎁 (Opcional) Crear GitHub Release con el APK firmado
-      - name: Create GitHub Release (optional)
+      # 🎁 (opcional) Release en GitHub
+      - name: Create GitHub Release
         if: github.ref == 'refs/heads/main'
         uses: softprops/action-gh-release@v2
         with:
