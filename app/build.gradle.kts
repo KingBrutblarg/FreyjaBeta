@@ -4,38 +4,36 @@ plugins {
 }
 
 android {
-    namespace = "com.angeluz.freyja"
-    compileSdk = 34
+    // 👉 conserva aquí lo que ya tenías (compileSdk, defaultConfig, namespace, etc.)
 
-    defaultConfig {
-        applicationId = "com.angeluz.freyja"
-        minSdk = 26
-        targetSdk = 34
-        versionCode = 9
-        versionName = "0.9"
-    }
-
-    // 🔑 Configuración de firma (lee de gradle.properties)
+    // 🔑 Firma de release leyendo de gradle.properties
     signingConfigs {
         create("release") {
-            storeFile = file(project.property("RELEASE_STORE_FILE") as String)
-            storePassword = project.property("RELEASE_STORE_PASSWORD") as String
-            keyAlias = project.property("RELEASE_KEY_ALIAS") as String
-            keyPassword = project.property("RELEASE_KEY_PASSWORD") as String
-            storeType = "pkcs12"
+            val ksFile  = project.findProperty("RELEASE_STORE_FILE") as String?
+            val ksPass  = project.findProperty("RELEASE_STORE_PASSWORD") as String?
+            val keyAl   = project.findProperty("RELEASE_KEY_ALIAS") as String?
+            val keyPass = project.findProperty("RELEASE_KEY_PASSWORD") as String?
+
+            if (ksFile != null && ksPass != null && keyAl != null && keyPass != null) {
+                storeFile = file(ksFile)          // relativo al módulo app
+                storePassword = ksPass
+                keyAlias = keyAl
+                keyPassword = keyPass
+                storeType = "pkcs12"
+            }
         }
     }
 
     buildTypes {
-        release {
-            signingConfig = signingConfigs.getByName("release")
+        getByName("release") {
             isMinifyEnabled = false
+            signingConfig = signingConfigs.getByName("release")
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
         }
-        debug {
+        getByName("debug") {
             isDebuggable = true
         }
     }
@@ -44,9 +42,13 @@ android {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
     }
-    kotlinOptions { jvmTarget = "17" }
+    kotlinOptions {
+        jvmTarget = "17"
+    }
 
-    buildFeatures { viewBinding = true }
+    buildFeatures {
+        viewBinding = true
+    }
 }
 
 dependencies {
