@@ -1,9 +1,12 @@
+cd ~/FreyjaBeta
+
+cat > .github/workflows/build-apk.yml <<'YAML'
 name: Build & Release APK
 
 on:
-  workflow_dispatch:
   push:
     branches: [ "main" ]
+  workflow_dispatch:
 
 permissions:
   contents: write
@@ -11,7 +14,6 @@ permissions:
 jobs:
   build:
     runs-on: ubuntu-22.04
-
     steps:
       - uses: actions/checkout@v4
 
@@ -20,6 +22,7 @@ jobs:
         with:
           distribution: temurin
           java-version: '17'
+          cache: gradle
 
       - name: Set up Android SDK
         uses: android-actions/setup-android@v3
@@ -35,20 +38,21 @@ jobs:
       - name: Create local.properties (point SDK)
         run: echo "sdk.dir=$ANDROID_SDK_ROOT" > local.properties
 
-      # ⬇️ AHORA SÍ: dentro del job
+      # --- 🔐 Decode keystore desde el secret (una sola línea, sin espacios) ---
       - name: Decode keystore
         run: |
           printf '%s' "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" \
           | tr -d '\r\n[:space:]' \
-          | base64 -di > freyja-release.p12
+          | base64 -d > freyja-release.p12
 
+      # --- 🏗️ Build Release APK firmado pasando props inyectadas ---
       - name: Build release APK (signed)
-        env:
-          ANDROID_KEYSTORE_PATH: freyja-release.p12
-          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
-          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
-          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
-        run: ./gradlew --no-daemon :app:assembleRelease
+        run: |
+          ./gradlew --no-daemon :app:assembleRelease \
+            -Pandroid.injected.signing.store.file=freyja-release.p12 \
+            -Pandroid.injected.signing.store.password="${{ secrets.ANDROID_KEYSTORE_PASSWORD }}" \
+            -Pandroid.injected.signing.key.alias="${{ secrets.ANDROID_KEY_ALIAS }}" \
+            -Pandroid.injected.signing.key.password="${{ secrets.ANDROID_KEY_PASSWORD }}"
 
       - name: Upload signed APK
         uses: actions/upload-artifact@v4
@@ -67,3 +71,8 @@ jobs:
           make_latest: true
           generate_release_notes: true
           files: app/build/outputs/apk/release/*.apk
+YAML
+
+git add .github/workflows/build-apk.yml
+git commit -m "ci: workflow limpio con decode keystore y build firmado"
+git push origin main
