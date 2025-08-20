@@ -52,6 +52,13 @@ jobs:
             echo "RELEASE_KEY_PASSWORD=${{ secrets.ANDROID_KEY_PASSWORD }}"
           } >> gradle.properties
 
+- name: Decode keystore
+  run: |
+    mkdir -p app
+    printf '%s' "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" \
+    | tr -d '\r\n[:space:]' \
+    | base64 -d > app/freyja-release.p12
+
       # 🏗️ Compila release firmado (usa signingConfigs del build.gradle.kts)
       - name: Build release APK (signed)
         run: ./gradlew --no-daemon :app:assembleRelease
