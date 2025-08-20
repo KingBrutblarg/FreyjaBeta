@@ -31,11 +31,11 @@ jobs:
 
       - name: Decode Keystore
         run: |
-          echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 -d > my-release-key.jks
+          echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 -d > freyja-release.p12
 
       - name: Build Release APK
         run: ./gradlew assembleRelease \
-          -Pandroid.injected.signing.store.file=my-release-key.jks \
+          -Pandroid.injected.signing.store.file=freyja-release.p12 \
           -Pandroid.injected.signing.store.password=${{ secrets.ANDROID_KEYSTORE_PASSWORD }} \
           -Pandroid.injected.signing.key.alias=${{ secrets.ANDROID_KEY_ALIAS }} \
           -Pandroid.injected.signing.key.password=${{ secrets.ANDROID_KEY_PASSWORD }}
