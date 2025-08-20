@@ -1,25 +1,23 @@
 name: Build & Release APK
 
 on:
-  workflow_dispatch:
   push:
     branches: [ "main" ]
-
-permissions:
-  contents: write
+  workflow_dispatch:
 
 jobs:
   build:
     runs-on: ubuntu-22.04
-    steps:
-      - uses: actions/checkout@v4
 
-      - name: Set up Java 17 (Temurin)
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK
         uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: '17'
-          cache: gradle
 
       - name: Set up Android SDK
         uses: android-actions/setup-android@v3
@@ -27,46 +25,23 @@ jobs:
           api-level: 34
           build-tools: "34.0.0"
           ndk: 25.1.8937393
-          cmdline-tools: latest
 
-      - name: Configure Gradle cache
-        uses: gradle/actions/setup-gradle@v3
-
-      - name: Create local.properties (point SDK)
+      - name: Create local.properties
         run: echo "sdk.dir=$ANDROID_SDK_ROOT" > local.properties
 
-      # ---- Build sin firma ----
-      - name: Build debug APK
-        run: ./gradlew --no-daemon :app:assembleDebug
+      - name: Decode Keystore
+        run: |
+          echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 -d > my-release-key.jks
 
-      - name: Build release APK (unsigned)
-        run: ./gradlew --no-daemon :app:assembleRelease
+      - name: Build Release APK
+        run: ./gradlew assembleRelease \
+          -Pandroid.injected.signing.store.file=my-release-key.jks \
+          -Pandroid.injected.signing.store.password=${{ secrets.ANDROID_KEYSTORE_PASSWORD }} \
+          -Pandroid.injected.signing.key.alias=${{ secrets.ANDROID_KEY_ALIAS }} \
+          -Pandroid.injected.signing.key.password=${{ secrets.ANDROID_KEY_PASSWORD }}
 
-      - name: Upload debug APK
+      - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: app-debug
-          path: app/build/outputs/apk/debug/*.apk
-          if-no-files-found: error
-
-      - name: Upload release APK (unsigned)
-        uses: actions/upload-artifact@v4
-        with:
-          name: app-release-unsigned
-          path: app/build/outputs/apk/release/*-unsigned.apk
-          if-no-files-found: error
-
-      # Opcional: crear un Release en GitHub con ambos APKs (unsigned)
-      - name: Create GitHub Release
-        if: github.ref == 'refs/heads/main'
-        uses: softprops/action-gh-release@v2
-        with:
-          # Si no tienes RELEASE_TOKEN, puedes omitir 'token:' y usar GITHUB_TOKEN por defecto
-          token: ${{ secrets.RELEASE_TOKEN }}
-          tag_name: build-${{ github.run_number }}.${{ github.run_attempt }}
-          name: "Build ${{ github.run_number }} (unsigned)"
-          make_latest: true
-          generate_release_notes: true
-          files: |
-            app/build/outputs/apk/debug/*.apk
-            app/build/outputs/apk/release/*-unsigned.apk
+          name: release-apk
+          path: app/build/outputs/apk/release/*.apk
