@@ -4,17 +4,17 @@ plugins {
 }
 
 android {
-    namespace = "com.kingbrutblarg.freyjabeta"        // 👈 que coincida con tu app
+    namespace = "com.kingbrutblarg.freyjabeta"
     compileSdk = 34
 
     defaultConfig {
-        applicationId = "com.kingbrutblarg.freyjabeta" // 👈 igual que arriba
+        applicationId = "com.kingbrutblarg.freyjabeta"
         minSdk = 24
         targetSdk = 34
-        // versionCode y versionName como los tengas
+        versionCode = 1
+        versionName = "1.0"
     }
 
-    // 🔐 lee credenciales desde gradle.properties
     signingConfigs {
         create("release") {
             val ksFile  = project.findProperty("RELEASE_STORE_FILE") as String?
@@ -22,7 +22,7 @@ android {
             val keyAl   = project.findProperty("RELEASE_KEY_ALIAS") as String?
             val keyPass = project.findProperty("RELEASE_KEY_PASSWORD") as String?
             if (ksFile != null && ksPass != null && keyAl != null && keyPass != null) {
-                storeFile = file(ksFile)   // relativo al módulo "app"
+                storeFile = file(ksFile)   // p.ej. "freyja-release.p12" en /app
                 storePassword = ksPass
                 keyAlias = keyAl
                 keyPassword = keyPass
