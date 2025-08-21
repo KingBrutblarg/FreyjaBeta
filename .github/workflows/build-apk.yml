@@ -35,7 +35,7 @@ jobs:
       - name: Create local.properties (point SDK)
         run: echo "sdk.dir=$ANDROID_SDK_ROOT" > local.properties
 
-      # 🔐 Decode keystore desde el secret
+      # 🔐 Keystore: se escribe en el directorio del módulo "app"
       - name: Decode keystore
         run: |
           mkdir -p app
@@ -43,27 +43,30 @@ jobs:
           | tr -d '\r\n[:space:]' \
           | base64 -d > app/freyja-release.p12
 
-      # 📜 Configura gradle.properties con flags y secrets
+      # ✍️ gradle.properties con flags y credenciales
       - name: Write gradle.properties
         run: |
           cat > gradle.properties <<'EOF'
-          org.gradle.jvmargs=-Xmx4g -Dfile.encoding=UTF-8
+          RELEASE_STORE_FILE=freyja-release.p12
+          RELEASE_STORE_PASSWORD=${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          RELEASE_KEY_ALIAS=${{ secrets.ANDROID_KEY_ALIAS }}
+          RELEASE_KEY_PASSWORD=${{ secrets.ANDROID_KEY_PASSWORD }}
+
+          org.gradle.jvmargs=-Xmx4g
+          -Dfile.encoding=UTF-8
           android.useAndroidX=true
           android.enableJetifier=true
           kotlin.code.style=official
           android.nonTransitiveRClass=true
-
-          RELEASE_STORE_FILE=freyja-release.p12
-          RELEASE_STORE_PASSWORD=${ANDROID_KEYSTORE_PASSWORD}
-          RELEASE_KEY_ALIAS=${ANDROID_KEY_ALIAS}
-          RELEASE_KEY_PASSWORD=${ANDROID_KEY_PASSWORD}
           EOF
+          echo "== gradle.properties =="
+          sed 's/^\(RELEASE_.*=\).*/\1*** (hidden)/' gradle.properties
 
-      # 🏗️ Build Release APK firmado
+      # 🏗️ Build firmado
       - name: Build release APK (signed)
         run: ./gradlew --no-daemon :app:assembleRelease
 
-      # 📦 Sube artefacto firmado
+      # 📦 Artefacto
       - name: Upload signed APK
         uses: actions/upload-artifact@v4
         with:
@@ -71,14 +74,14 @@ jobs:
           path: app/build/outputs/apk/release/*.apk
           if-no-files-found: error
 
-      # 🎁 Crear GitHub Release con el APK firmado
-      - name: Create GitHub Release
+      # 🎁 Opcional: crear Release
+      - name: Create GitHub Release (optional)
         if: github.ref == 'refs/heads/main'
         uses: softprops/action-gh-release@v2
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ secrets.RELEASE_TOKEN }}
           tag_name: build-${{ github.run_number }}.${{ github.run_attempt }}
-          name: "Freyja Release ${{ github.run_number }}"
+          name: "Build ${{ github.run_number }} (signed)"
           make_latest: true
           generate_release_notes: true
           files: app/build/outputs/apk/release/*.apk
