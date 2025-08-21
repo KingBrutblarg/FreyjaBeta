@@ -1,49 +1,46 @@
-<?xml version="1.0" encoding="utf-8"?>
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+android {
+    namespace = "com.kingbrutblarg.freyjabeta"   // <-- cámbialo si quieres otro
+    compileSdk = 34
 
-    <!-- Visibilidad para Termux (Android 11+) -->
-    <queries>
-        <package android:name="com.termux" />
-    </queries>
+    defaultConfig {
+        applicationId = "com.kingbrutblarg.freyjabeta" // que coincida con tu namespace deseado
+        minSdk = 24
+        targetSdk = 34
+        // versionCode / versionName como los tengas
+    }
 
-    <!-- Permisos -->
-    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
-    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
-    <uses-permission android:name="android.permission.RECORD_AUDIO" />
-    <uses-permission android:name="android.permission.WAKE_LOCK" />
-    <uses-permission android:name="android.permission.INTERNET" />
+    signingConfigs {
+        create("release") {
+            val ksFile  = project.findProperty("RELEASE_STORE_FILE") as String?
+            val ksPass  = project.findProperty("RELEASE_STORE_PASSWORD") as String?
+            val keyAl   = project.findProperty("RELEASE_KEY_ALIAS") as String?
+            val keyPass = project.findProperty("RELEASE_KEY_PASSWORD") as String?
+            if (ksFile != null && ksPass != null && keyAl != null && keyPass != null) {
+                storeFile = file(ksFile)      // "freyja-release.p12" en /app
+                storePassword = ksPass
+                keyAlias = keyAl
+                keyPassword = keyPass
+                storeType = "pkcs12"
+            }
+        }
+    }
 
-    <application
-        android:allowBackup="true"
-        android:icon="@mipmap/ic_launcher"
-        android:label="Freyja (Beta)"
-        android:roundIcon="@mipmap/ic_launcher"
-        android:networkSecurityConfig="@xml/network_security_config"
-        android:supportsRtl="true"
-        android:theme="@style/Theme.Freyja">
+    buildTypes {
+        getByName("release") {
+            isMinifyEnabled = false
+            signingConfig = signingConfigs.getByName("release")
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro"
+            )
+        }
+        getByName("debug") { isDebuggable = true }
+    }
 
-        <service
-            android:name=".FreyjaService"
-            android:exported="false"
-            android:foregroundServiceType="microphone|dataSync" />
-
-        <receiver
-            android:name=".BootCompletedReceiver"
-            android:enabled="true"
-            android:exported="true">
-            <intent-filter>
-                <action android:name="android.intent.action.BOOT_COMPLETED" />
-            </intent-filter>
-        </receiver>
-
-        <activity
-            android:name=".MainActivity"
-            android:exported="true">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
-        </activity>
-
-    </application>
-</manifest>
+    compileOptions {
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
+    }
+    kotlinOptions { jvmTarget = "17" }
+    buildFeatures { viewBinding = true }
+}
