@@ -37,3 +37,8 @@ freyja-release.keystore.b64
 *.b64
 b64parts/
 check.p12
+
+gradle.properties
+
+# ignora cualquier gradle.properties
+**/gradle.properties
