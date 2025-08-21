@@ -4,31 +4,25 @@ plugins {
 }
 
 android {
-    // Si ya tienes namespace/applicationId en este archivo, déjalos como estaban.
-    // namespace = "com.tu.paquete.freyja"     // ← opcional, usa el tuyo si no existía
-
-    // 🧱 SDKs
+    namespace = "com.kingbrutblarg.freyjabeta"        // 👈 que coincida con tu app
     compileSdk = 34
 
     defaultConfig {
-        // applicationId = "com.tu.paquete.freyja"   // ← si ya lo tenías, mantenlo
+        applicationId = "com.kingbrutblarg.freyjabeta" // 👈 igual que arriba
         minSdk = 24
         targetSdk = 34
-        // versionCode / versionName: deja lo que tengas
+        // versionCode y versionName como los tengas
     }
 
-    // 🔑 Firma de release leyendo de gradle.properties
+    // 🔐 lee credenciales desde gradle.properties
     signingConfigs {
         create("release") {
             val ksFile  = project.findProperty("RELEASE_STORE_FILE") as String?
             val ksPass  = project.findProperty("RELEASE_STORE_PASSWORD") as String?
             val keyAl   = project.findProperty("RELEASE_KEY_ALIAS") as String?
             val keyPass = project.findProperty("RELEASE_KEY_PASSWORD") as String?
-
             if (ksFile != null && ksPass != null && keyAl != null && keyPass != null) {
-                // El workflow deja el archivo en app/freyja-release.p12 y
-                // file("freyja-release.p12") es relativo al módulo :app, así que coincide.
-                storeFile = file(ksFile)
+                storeFile = file(ksFile)   // relativo al módulo "app"
                 storePassword = ksPass
                 keyAlias = keyAl
                 keyPassword = keyPass
@@ -46,9 +40,7 @@ android {
                 "proguard-rules.pro"
             )
         }
-        getByName("debug") {
-            isDebuggable = true
-        }
+        getByName("debug") { isDebuggable = true }
     }
 
     compileOptions {
@@ -56,7 +48,6 @@ android {
         targetCompatibility = JavaVersion.VERSION_17
     }
     kotlinOptions { jvmTarget = "17" }
-
     buildFeatures { viewBinding = true }
 }
 
@@ -77,5 +68,4 @@ dependencies {
 
     implementation("com.squareup.okhttp3:okhttp:4.12.0")
     implementation("com.squareup.okio:okio:3.6.0")
-    // implementation("com.squareup.okhttp3:logging-interceptor:4.12.0")
 }
