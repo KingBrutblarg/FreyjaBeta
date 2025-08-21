@@ -4,7 +4,18 @@ plugins {
 }
 
 android {
-    // 👉 conserva aquí lo que ya tenías (compileSdk, defaultConfig, namespace, etc.)
+    // Si ya tienes namespace/applicationId en este archivo, déjalos como estaban.
+    // namespace = "com.tu.paquete.freyja"     // ← opcional, usa el tuyo si no existía
+
+    // 🧱 SDKs
+    compileSdk = 34
+
+    defaultConfig {
+        // applicationId = "com.tu.paquete.freyja"   // ← si ya lo tenías, mantenlo
+        minSdk = 24
+        targetSdk = 34
+        // versionCode / versionName: deja lo que tengas
+    }
 
     // 🔑 Firma de release leyendo de gradle.properties
     signingConfigs {
@@ -15,7 +26,9 @@ android {
             val keyPass = project.findProperty("RELEASE_KEY_PASSWORD") as String?
 
             if (ksFile != null && ksPass != null && keyAl != null && keyPass != null) {
-                storeFile = file(ksFile)          // relativo al módulo app
+                // El workflow deja el archivo en app/freyja-release.p12 y
+                // file("freyja-release.p12") es relativo al módulo :app, así que coincide.
+                storeFile = file(ksFile)
                 storePassword = ksPass
                 keyAlias = keyAl
                 keyPassword = keyPass
@@ -42,13 +55,9 @@ android {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
     }
-    kotlinOptions {
-        jvmTarget = "17"
-    }
+    kotlinOptions { jvmTarget = "17" }
 
-    buildFeatures {
-        viewBinding = true
-    }
+    buildFeatures { viewBinding = true }
 }
 
 dependencies {
