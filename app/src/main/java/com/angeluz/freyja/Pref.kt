@@ -42,3 +42,15 @@ object Prefs {
         ctx.dataStore.edit { it[KEY_TOKEN] = token }
     }
 }
+
+// --- en Pref.kt (mismo object Pref) ---
+private val KEY_LAST_STATUS = stringPreferencesKey("last_status")
+
+fun lastStatus(ctx: Context): Flow<String?> =
+    ctx.dataStore.data.map { it[KEY_LAST_STATUS] }
+
+suspend fun setLastStatus(ctx: Context, value: String?) {
+    ctx.dataStore.edit { prefs ->
+        if (value == null) prefs.remove(KEY_LAST_STATUS) else prefs[KEY_LAST_STATUS] = value
+    }
+}
