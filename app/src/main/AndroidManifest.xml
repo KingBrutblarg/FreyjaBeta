@@ -1,30 +1,38 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
+    <!-- Visibilidad a Termux para poder enviarle intents -->
     <queries>
         <package android:name="com.termux" />
     </queries>
 
-    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
-    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
-    <uses-permission android:name="android.permission.RECORD_AUDIO" />
-    <uses-permission android:name="android.permission.WAKE_LOCK" />
+    <!-- PERMISOS: quita los que no uses -->
     <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
+    <!-- Android 13+ (Tiramisu) notificaciones -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <!-- Android 13+/14 foreground service de micrófono -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MICROPHONE" />
+    <!-- Permiso propio de Termux para RUN_COMMAND -->
+    <uses-permission android:name="com.termux.permission.RUN_COMMAND" />
 
     <application
         android:allowBackup="true"
         android:icon="@mipmap/ic_launcher"
         android:label="Freyja (Beta)"
         android:roundIcon="@mipmap/ic_launcher"
-        android:networkSecurityConfig="@xml/network_security_config"
         android:supportsRtl="true"
         android:theme="@style/Theme.Freyja">
 
+        <!-- Servicio en primer plano (usa el micro) -->
         <service
             android:name=".FreyjaService"
             android:exported="false"
-            android:foregroundServiceType="microphone|dataSync" />
+            android:foregroundServiceType="microphone" />
 
+        <!-- Arranque tras BOOT_COMPLETED -->
         <receiver
             android:name=".BootCompletedReceiver"
             android:enabled="true"
@@ -34,6 +42,7 @@
             </intent-filter>
         </receiver>
 
+        <!-- Activity principal -->
         <activity
             android:name=".MainActivity"
             android:exported="true">
