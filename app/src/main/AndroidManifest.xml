@@ -24,10 +24,10 @@
     <uses-permission android:name="android.permission.BLUETOOTH_SCAN"/>
     <uses-permission android:name="android.permission.BLUETOOTH_ADVERTISE"/>
 
-    <!-- Notificaciones (13+) -->
+    <!-- Notificaciones (Android 13+) -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
 
-    <!-- ===== ESPECIALES (se otorgan en Ajustes) ===== -->
+    <!-- ===== ESPECIALES (se otorgan en Ajustes del sistema) ===== -->
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE"/>
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_LOCATION"/>
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MICROPHONE"/>
@@ -42,7 +42,7 @@
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>
     <uses-permission android:name="android.permission.WAKE_LOCK"/>
 
-    <!-- All files (opcional; se pide en pantalla especial) -->
+    <!-- All files (opcional; se concede en pantalla especial de ajustes) -->
     <uses-permission android:name="android.permission.MANAGE_EXTERNAL_STORAGE"/>
 
     <application
@@ -52,6 +52,7 @@
         android:supportsRtl="true"
         android:usesCleartextTraffic="true">
 
+        <!-- Launcher -->
         <activity
             android:name=".MainActivity"
             android:exported="true">
@@ -61,26 +62,15 @@
             </intent-filter>
         </activity>
 
-        <!-- Servicio en primer plano -->
+        <!-- Servicio en primer plano (mismo paquete, SIN carpeta core) -->
         <service
-            android:name=".core.FreyjaService"
+            android:name=".FreyjaService"
             android:exported="false"
             android:foregroundServiceType="location|microphone|camera|dataSync"/>
 
-        <!-- Listener de notificaciones -->
-        <service
-            android:name=".core.FreyjaNotificationListener"
-            android:label="Freyja Notification Access"
-            android:exported="false"
-            android:permission="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE">
-            <intent-filter>
-                <action android:name="android.service.notification.NotificationListenerService"/>
-            </intent-filter>
-        </service>
-
-        <!-- Arrancar al encender -->
+        <!-- Auto-inicio al encender (mismo paquete) -->
         <receiver
-            android:name=".core.BootReceiver"
+            android:name=".BootCompletedReceiver"
             android:enabled="true"
             android:exported="false">
             <intent-filter>
@@ -88,19 +78,8 @@
             </intent-filter>
         </receiver>
 
-        <!-- Accesibilidad (opcional). Si la usarás, descomenta esto y crea el XML. -->
-        <!--
-        <service
-            android:name=".core.FreyjaAccessibilityService"
-            android:exported="false"
-            android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE">
-            <intent-filter>
-                <action android:name="android.accessibilityservice.AccessibilityService"/>
-            </intent-filter>
-            <meta-data
-                android:name="android.accessibilityservice"
-                android:resource="@xml/accessibility_config"/>
-        </service>
-        -->
+        <!-- Si más adelante agregamos NotificationListener o Accesibilidad,
+             los añadimos aquí. Por ahora lo dejamos fuera para evitar choques. -->
+
     </application>
 </manifest>
