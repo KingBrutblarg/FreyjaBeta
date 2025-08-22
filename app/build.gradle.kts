@@ -23,7 +23,7 @@ android {
             isMinifyEnabled = false
             isShrinkResources = false
         }
-        create("release") {
+        getByName("release") {
             isMinifyEnabled = true
             isShrinkResources = true
             proguardFiles(
