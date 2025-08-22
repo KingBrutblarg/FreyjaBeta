@@ -1,5 +1,4 @@
-- name: Build Debug APK
-  run: ./gradlew --no-daemon assembleDebug
+name: Android Debug Build
 
 on:
   push:
@@ -15,16 +14,15 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      # 2) Configurar Java (Gradle requiere JDK 17 para la mayoría de proyectos actuales)
+      # 2) Configurar Java 17
       - name: Set up Java
         uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: '17'
+          cache: gradle
 
-      # 3) Instalar/Configurar Android SDK (entradas válidas)
-      #    NOTA: No usamos api-level/ndk/build-tools como inputs directos.
-      #    Se declaran mediante 'packages' y aceptamos licencias.
+      # 3) Instalar/Configurar Android SDK
       - name: Set up Android SDK
         uses: android-actions/setup-android@v3
         with:
@@ -36,37 +34,26 @@ jobs:
             platforms;android-34
             build-tools;34.0.0
 
-      # 4) Configurar caché de Gradle (la acción oficial lo maneja)
+      # 4) Configurar caché de Gradle
       - name: Configure Gradle
         uses: gradle/actions/setup-gradle@v3
 
-      # 5) Asegurar que Gradle Wrapper sea ejecutable
+      # 5) Hacer ejecutable el wrapper
       - name: Make gradlew executable
         run: chmod +x gradlew
 
-      # 6) Crear local.properties apuntando al SDK instalado por la acción
+      # 6) local.properties apuntando al SDK
       - name: Create local.properties
         run: echo "sdk.dir=$ANDROID_SDK_ROOT" > local.properties
 
-      # 7) Compilar APK de debug (rápido y sin firma requerida)
+      # 7) Compilar APK de debug
       - name: Build Debug APK
         run: ./gradlew --no-daemon assembleDebug
 
-      # 8) Subir artefacto (APK) generado
+      # 8) Subir el APK
       - name: Upload Debug APK
         uses: actions/upload-artifact@v4
         with:
           name: app-debug-apk
           path: app/build/outputs/apk/debug/*.apk
           if-no-files-found: error
-
-      # --- OPCIONAL: Compilar release (requieres firma). Descomenta si ya configuraste secretos.
-      # - name: Build Release APK
-      #   run: ./gradlew --no-daemon assembleRelease
-      #
-      # - name: Upload Release APK
-      #   uses: actions/upload-artifact@v4
-      #   with:
-      #     name: app-release-apk
-      #     path: app/build/outputs/apk/release/*.apk
-      #     if-no-files-found: error
