@@ -10,47 +10,44 @@ jobs:
     runs-on: ubuntu-22.04
 
     steps:
-      # 1) Obtener el repo
       - name: Checkout
         uses: actions/checkout@v4
 
-      # 2) Configurar Java 17
-      - name: Set up Java
+      - name: Set up Java 17
         uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: '17'
+          java-version: "17"
           cache: gradle
 
-      # 3) Instalar/Configurar Android SDK
-      - name: Set up Android SDK
+      - name: Set up Android SDK (base)
         uses: android-actions/setup-android@v3
         with:
           cmdline-tools-version: 10406996
           accept-android-sdk-licenses: true
           log-accepted-android-sdk-licenses: true
-          packages: |
-            platform-tools
-            platforms;android-34
-            build-tools;34.0.0
 
-      # 4) Configurar caché de Gradle
+      - name: Install required Android packages
+        shell: bash
+        run: |
+          set -euxo pipefail
+          SDKROOT="${ANDROID_HOME:-$ANDROID_SDK_ROOT}"
+          SDKMAN="$SDKROOT/cmdline-tools/latest/bin/sdkmanager"
+          yes | "$SDKMAN" --licenses
+          "$SDKMAN" --install "platform-tools" "platforms;android-34" "build-tools;34.0.0"
+
       - name: Configure Gradle
         uses: gradle/actions/setup-gradle@v3
 
-      # 5) Hacer ejecutable el wrapper
       - name: Make gradlew executable
         run: chmod +x gradlew
 
-      # 6) local.properties apuntando al SDK
       - name: Create local.properties
-        run: echo "sdk.dir=$ANDROID_SDK_ROOT" > local.properties
+        run: echo "sdk.dir=${ANDROID_HOME:-$ANDROID_SDK_ROOT}" > local.properties
 
-      # 7) Compilar APK de debug
       - name: Build Debug APK
         run: ./gradlew --no-daemon assembleDebug
 
-      # 8) Subir el APK
       - name: Upload Debug APK
         uses: actions/upload-artifact@v4
         with:
