@@ -1,0 +1,19 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="256dp" android:height="256dp"
+    android:viewportWidth="256" android:viewportHeight="256">
+    <!-- Escudo rúnico estilizado -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:fillAlpha="0.9"
+        android:pathData="M128,20 L206,60 L206,132 C206,180 171,220 128,236 85,220 50,180 50,132 L50,60z"/>
+    <!-- Runa interior -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:fillAlpha="0.9"
+        android:pathData="M128,60 L160,120 128,200 96,120z"/>
+    <!-- Detalle central -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:fillAlpha="0.7"
+        android:pathData="M128,88 L142,120 128,156 114,120z"/>
+</vector>
