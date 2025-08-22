@@ -1,4 +1,5 @@
-name: Build & Upload APK
+- name: Build Debug APK
+  run: ./gradlew --no-daemon assembleDebug
 
 on:
   push:
