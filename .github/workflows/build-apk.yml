@@ -37,7 +37,6 @@ jobs:
       - name: Create local.properties (point SDK)
         run: echo "sdk.dir=$ANDROID_SDK_ROOT" > local.properties
 
-      # 🔐 Decodifica el keystore (BASE64) en el módulo app/
       - name: Decode keystore
         run: |
           set -e
@@ -47,7 +46,6 @@ jobs:
           | base64 -d > app/freyja-release.p12
           ls -l app/freyja-release.p12
 
-      # ✅ Asegura flags AndroidX (por si el runner viene “limpio”)
       - name: Ensure AndroidX flags
         run: |
           set -e
@@ -57,7 +55,6 @@ jobs:
           echo "gradle.properties:"
           cat gradle.properties
 
-      # 🏗️ Build en 3 fases con logs detallados para detectar el primer error real
       - name: Build release APK (signed) — verbose
         run: |
           set -euxo pipefail
@@ -65,7 +62,7 @@ jobs:
           ./gradlew --no-daemon clean \
             -Dorg.gradle.logging.stacktrace=full --warning-mode all
 
-          # 1) Procesar recursos (si hay XML mal formados o drawables rotos, falla aquí)
+          # 1) Procesar recursos
           ./gradlew --no-daemon :app:processReleaseResources \
             --stacktrace --info \
             -Pandroid.injected.signing.store.file=app/freyja-release.p12 \
@@ -73,10 +70,11 @@ jobs:
             -Pandroid.injected.signing.key.alias="${{ secrets.ANDROID_KEY_ALIAS }}" \
             -Pandroid.injected.signing.key.password="${{ secrets.ANDROID_KEY_PASSWORD }}"
 
-          # 2) Compilar Kotlin (si hay imports o bindings incorrectos, falla aquí)
-          ./gradlew --no-daemon :app:compileReleaseKotlin --stacktrace --info
+          # 2) Compilar Kotlin
+          ./gradlew --no-daemon :app:compileReleaseKotlin \
+            --stacktrace --info
 
-          # 3) Empaquetar y firmar el APK
+          # 3) Empaquetar y firmar
           ./gradlew --no-daemon :app:packageRelease \
             --stacktrace --info \
             -Pandroid.injected.signing.store.file=app/freyja-release.p12 \
@@ -84,10 +82,9 @@ jobs:
             -Pandroid.injected.signing.key.alias="${{ secrets.ANDROID_KEY_ALIAS }}" \
             -Pandroid.injected.signing.key.password="${{ secrets.ANDROID_KEY_PASSWORD }}"
 
-          # (Opcional) Ensambla el artefacto final si no se generó aún
+          # Ensamblar APK final (por si falta)
           ./gradlew --no-daemon :app:assembleRelease --stacktrace --info || true
 
-      # 📦 Sube el APK resultante
       - name: Upload signed APK
         uses: actions/upload-artifact@v4
         with:
