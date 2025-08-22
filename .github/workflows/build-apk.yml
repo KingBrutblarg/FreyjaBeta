@@ -2,7 +2,7 @@ name: Build & Release APK
 
 on:
   push:
-    branches: ["main"]
+    branches: [ "main" ]
   workflow_dispatch:
 
 permissions:
@@ -11,8 +11,10 @@ permissions:
 jobs:
   build:
     runs-on: ubuntu-22.04
+
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v4
 
       - name: Set up Java 17 (Temurin)
         uses: actions/setup-java@v4
@@ -35,53 +37,60 @@ jobs:
       - name: Create local.properties (point SDK)
         run: echo "sdk.dir=$ANDROID_SDK_ROOT" > local.properties
 
-      # 🔐 Keystore: se escribe en el directorio del módulo "app"
+      # 🔐 Decodifica el keystore (BASE64) en el módulo app/
       - name: Decode keystore
         run: |
+          set -e
           mkdir -p app
           printf '%s' "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" \
           | tr -d '\r\n[:space:]' \
           | base64 -d > app/freyja-release.p12
+          ls -l app/freyja-release.p12
 
-      # ✍️ gradle.properties con flags y credenciales
-      - name: Write gradle.properties
+      # ✅ Asegura flags AndroidX (por si el runner viene “limpio”)
+      - name: Ensure AndroidX flags
         run: |
-          cat > gradle.properties <<'EOF'
-          RELEASE_STORE_FILE=freyja-release.p12
-          RELEASE_STORE_PASSWORD=${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
-          RELEASE_KEY_ALIAS=${{ secrets.ANDROID_KEY_ALIAS }}
-          RELEASE_KEY_PASSWORD=${{ secrets.ANDROID_KEY_PASSWORD }}
+          set -e
+          touch gradle.properties
+          grep -q '^android.useAndroidX=true$' gradle.properties || echo 'android.useAndroidX=true' >> gradle.properties
+          grep -q '^android.enableJetifier=true$' gradle.properties || echo 'android.enableJetifier=true' >> gradle.properties
+          echo "gradle.properties:"
+          cat gradle.properties
 
-          org.gradle.jvmargs=-Xmx4g
-          -Dfile.encoding=UTF-8
-          android.useAndroidX=true
-          android.enableJetifier=true
-          kotlin.code.style=official
-          android.nonTransitiveRClass=true
-          EOF
-          echo "== gradle.properties =="
-          sed 's/^\(RELEASE_.*=\).*/\1*** (hidden)/' gradle.properties
+      # 🏗️ Build en 3 fases con logs detallados para detectar el primer error real
+      - name: Build release APK (signed) — verbose
+        run: |
+          set -euxo pipefail
 
-      # 🏗️ Build firmado
-      - name: Build release APK (signed)
-        run: ./gradlew --no-daemon :app:assembleRelease
+          ./gradlew --no-daemon clean \
+            -Dorg.gradle.logging.stacktrace=full --warning-mode all
 
-      # 📦 Artefacto
+          # 1) Procesar recursos (si hay XML mal formados o drawables rotos, falla aquí)
+          ./gradlew --no-daemon :app:processReleaseResources \
+            --stacktrace --info \
+            -Pandroid.injected.signing.store.file=app/freyja-release.p12 \
+            -Pandroid.injected.signing.store.password="${{ secrets.ANDROID_KEYSTORE_PASSWORD }}" \
+            -Pandroid.injected.signing.key.alias="${{ secrets.ANDROID_KEY_ALIAS }}" \
+            -Pandroid.injected.signing.key.password="${{ secrets.ANDROID_KEY_PASSWORD }}"
+
+          # 2) Compilar Kotlin (si hay imports o bindings incorrectos, falla aquí)
+          ./gradlew --no-daemon :app:compileReleaseKotlin --stacktrace --info
+
+          # 3) Empaquetar y firmar el APK
+          ./gradlew --no-daemon :app:packageRelease \
+            --stacktrace --info \
+            -Pandroid.injected.signing.store.file=app/freyja-release.p12 \
+            -Pandroid.injected.signing.store.password="${{ secrets.ANDROID_KEYSTORE_PASSWORD }}" \
+            -Pandroid.injected.signing.key.alias="${{ secrets.ANDROID_KEY_ALIAS }}" \
+            -Pandroid.injected.signing.key.password="${{ secrets.ANDROID_KEY_PASSWORD }}"
+
+          # (Opcional) Ensambla el artefacto final si no se generó aún
+          ./gradlew --no-daemon :app:assembleRelease --stacktrace --info || true
+
+      # 📦 Sube el APK resultante
       - name: Upload signed APK
         uses: actions/upload-artifact@v4
         with:
           name: app-release-signed
           path: app/build/outputs/apk/release/*.apk
           if-no-files-found: error
-
-      # 🎁 Opcional: crear Release
-      - name: Create GitHub Release (optional)
-        if: github.ref == 'refs/heads/main'
-        uses: softprops/action-gh-release@v2
-        with:
-          token: ${{ secrets.RELEASE_TOKEN }}
-          tag_name: build-${{ github.run_number }}.${{ github.run_attempt }}
-          name: "Build ${{ github.run_number }} (signed)"
-          make_latest: true
-          generate_release_notes: true
-          files: app/build/outputs/apk/release/*.apk
