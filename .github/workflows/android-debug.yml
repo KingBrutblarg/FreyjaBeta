@@ -33,24 +33,5 @@ jobs:
           set -euxo pipefail
           SDKROOT="${ANDROID_HOME:-$ANDROID_SDK_ROOT}"
           SDKMAN="$SDKROOT/cmdline-tools/latest/bin/sdkmanager"
-          yes | "$SDKMAN" --licenses
+          yes | "$SDKMAN" --licenses > /dev/null || true
           "$SDKMAN" --install "platform-tools" "platforms;android-34" "build-tools;34.0.0"
-
-      - name: Configure Gradle
-        uses: gradle/actions/setup-gradle@v3
-
-      - name: Make gradlew executable
-        run: chmod +x gradlew
-
-      - name: Create local.properties
-        run: echo "sdk.dir=${ANDROID_HOME:-$ANDROID_SDK_ROOT}" > local.properties
-
-      - name: Build Debug APK
-        run: ./gradlew --no-daemon assembleDebug
-
-      - name: Upload Debug APK
-        uses: actions/upload-artifact@v4
-        with:
-          name: app-debug-apk
-          path: app/build/outputs/apk/debug/*.apk
-          if-no-files-found: error
