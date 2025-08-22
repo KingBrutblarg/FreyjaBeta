@@ -1,0 +1,56 @@
+name: Android Debug Build
+
+on:
+  push:
+    branches: [ "main" ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-22.04
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+          cache: gradle
+
+      - name: Set up Android SDK (base)
+        uses: android-actions/setup-android@v3
+        with:
+          cmdline-tools-version: 10406996
+          accept-android-sdk-licenses: true
+          log-accepted-android-sdk-licenses: true
+
+      - name: Install required Android packages
+        shell: bash
+        run: |
+          set -euxo pipefail
+          SDKROOT="${ANDROID_HOME:-$ANDROID_SDK_ROOT}"
+          SDKMAN="$SDKROOT/cmdline-tools/latest/bin/sdkmanager"
+          yes | "$SDKMAN" --licenses
+          "$SDKMAN" --install "platform-tools" "platforms;android-34" "build-tools;34.0.0"
+
+      - name: Configure Gradle
+        uses: gradle/actions/setup-gradle@v3
+
+      - name: Make gradlew executable
+        run: chmod +x gradlew
+
+      - name: Create local.properties
+        run: echo "sdk.dir=${ANDROID_HOME:-$ANDROID_SDK_ROOT}" > local.properties
+
+      - name: Build Debug APK
+        run: ./gradlew --no-daemon assembleDebug
+
+      - name: Upload Debug APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-debug-apk
+          path: app/build/outputs/apk/debug/*.apk
+          if-no-files-found: error
