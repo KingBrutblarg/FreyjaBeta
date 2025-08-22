@@ -1,0 +1,51 @@
+name: Update CHANGELOG
+
+on:
+  push:
+    tags:
+      - "v*"
+
+jobs:
+  changelog:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Generate changelog entry
+        run: |
+          VERSION=${GITHUB_REF_NAME}
+          DATE=$(date +"%Y-%m-%d")
+
+          echo "## 🌌 Freyja $VERSION — Guardia Activa ($DATE)" > new_entry.md
+          echo "" >> new_entry.md
+          echo "### ✨ Cambios:" >> new_entry.md
+          git log $(git describe --tags --abbrev=0 --tags --match "v*" --exclude="$VERSION")..HEAD --pretty=format:"- %s" >> new_entry.md || echo "- Primera publicación" >> new_entry.md
+
+          echo "" >> new_entry.md
+          echo "### 🔮 Mejoras Futuras:" >> new_entry.md
+          echo "- Integrar memoria persistente para los entrenamientos de combate." >> new_entry.md
+          echo "- Añadir sistema de voz con *hotword* local (\"Despierta, Freyja\")." >> new_entry.md
+          echo "- Modularizar UI para cambiar entre temas: grimorio rúnico, templo estelar, altar de fuego." >> new_entry.md
+          echo "- Optimizar tamaño del APK aplicando shrinkResources y split por ABI." >> new_entry.md
+          echo "" >> new_entry.md
+          echo "---" >> new_entry.md
+          echo "" >> new_entry.md
+
+      - name: Update CHANGELOG.md
+        run: |
+          if [ -f CHANGELOG.md ]; then
+            cat new_entry.md CHANGELOG.md > CHANGELOG.tmp
+            mv CHANGELOG.tmp CHANGELOG.md
+          else
+            cat new_entry.md > CHANGELOG.md
+          fi
+
+      - name: Commit and push changelog
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add CHANGELOG.md
+          git commit -m "docs(changelog): update for ${{ github.ref_name }}"
+          git push
