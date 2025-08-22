@@ -14,7 +14,6 @@ import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
-import java.io.OutputStream
 import java.util.concurrent.TimeUnit
 
 object ImageMaker {
@@ -54,7 +53,7 @@ object ImageMaker {
         client.newCall(req).execute().use { resp ->
             if (!resp.isSuccessful) return@use null
             val json = resp.body?.string() ?: return@use null
-            // Respuesta típica: {"images":["<base64>",...], "parameters": {...}, ...}
+            // Respuesta típica: {"images":["<base64>",...], ...}
             val base64 = Regex("\"images\"\\s*:\\s*\\[\\s*\"([^\"]+)\"")
                 .find(json)?.groupValues?.getOrNull(1) ?: return@use null
             val bytes = Base64.decode(base64, Base64.DEFAULT)
@@ -105,18 +104,15 @@ object ImageMaker {
 
         val uri = resolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, contentValues)
             ?: return null
-        var out: OutputStream? = null
-        try {
-            out = resolver.openOutputStream(uri)
+
+        // Stream no nulo y autocierre seguro
+        resolver.openOutputStream(uri)?.use { out ->
             bmp.compress(Bitmap.CompressFormat.PNG, 100, out)
-        } finally {
-            out?.close()
-        }
+        } ?: return null
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            contentValues.clear()
-            contentValues.put(MediaStore.Images.Media.IS_PENDING, 0)
-            resolver.update(uri, contentValues, null, null)
+            val done = ContentValues().apply { put(MediaStore.Images.Media.IS_PENDING, 0) }
+            resolver.update(uri, done, null, null)
         }
         return uri
     }
