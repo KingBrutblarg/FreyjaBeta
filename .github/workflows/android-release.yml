@@ -1,4 +1,3 @@
-cat > .github/workflows/android-release.yml <<'YML'
 name: Android Release Build
 
 on:
@@ -68,7 +67,6 @@ jobs:
           name: freyja-release
           path: .
 
-      # Opción A: token propio
       - name: Create GitHub Release (with APK)
         uses: softprops/action-gh-release@v2
         with:
@@ -76,13 +74,3 @@ jobs:
           generate_release_notes: true
         env:
           GITHUB_TOKEN: ${{ secrets.RELEASE_TOKEN }}
-
-      # Opción B (alternativa): usa el token integrado
-      # - name: Create GitHub Release (with APK)
-      #   uses: softprops/action-gh-release@v2
-      #   with:
-      #     files: freyja-release.apk
-      #     generate_release_notes: true
-      #   env:
-      #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-YML
