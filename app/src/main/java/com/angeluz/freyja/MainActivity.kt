@@ -14,7 +14,6 @@ import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import android.content.pm.PackageManager
 import android.os.Environment
-import com.angeluz.freyja.core.FreyjaService
 
 class MainActivity : ComponentActivity() {
 
@@ -26,19 +25,19 @@ class MainActivity : ComponentActivity() {
         requestDangerousPermissions()
         askSpecialGrants()
 
-        // Inicia el servicio en primer plano
+        // Inicia el servicio en primer plano (clase en el MISMO paquete)
         ContextCompat.startForegroundService(
             this, Intent(this, FreyjaService::class.java)
         )
 
         Toast.makeText(this, "Freyja en guardia…", Toast.LENGTH_SHORT).show()
-        finish() // esta Activity es solo lanzador
+        finish() // Activity solo como lanzador
     }
 
     private fun requestDangerousPermissions() {
         val need = mutableListOf<String>()
 
-        // Micro/Cámara
+        // Micro / Cámara
         need += Manifest.permission.RECORD_AUDIO
         need += Manifest.permission.CAMERA
 
@@ -78,7 +77,6 @@ class MainActivity : ComponentActivity() {
         val toAsk = need.filter {
             ContextCompat.checkSelfPermission(this, it) != PackageManager.PERMISSION_GRANTED
         }
-
         if (toAsk.isNotEmpty()) {
             ActivityCompat.requestPermissions(this, toAsk.toTypedArray(), REQ_PERMS)
         }
@@ -90,22 +88,21 @@ class MainActivity : ComponentActivity() {
             !Environment.isExternalStorageManager()
         ) {
             val uri = Uri.parse("package:$packageName")
-            val intent = Intent(Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION, uri)
-            startActivity(intent)
+            startActivity(Intent(Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION, uri))
         }
 
-        // Overlay
+        // Overlay (HUD / botón)
         if (!Settings.canDrawOverlays(this)) {
-            val intent = Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION, Uri.parse("package:$packageName"))
-            startActivity(intent)
+            startActivity(Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION, Uri.parse("package:$packageName")))
         }
 
         // Ignorar optimización de batería
         val pm = getSystemService(Context.POWER_SERVICE) as android.os.PowerManager
         if (!pm.isIgnoringBatteryOptimizations(packageName)) {
-            val i = Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS)
-                .setData(Uri.parse("package:$packageName"))
-            startActivity(i)
+            startActivity(
+                Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS)
+                    .setData(Uri.parse("package:$packageName"))
+            )
         }
 
         // Exact alarms (12+)
@@ -116,21 +113,9 @@ class MainActivity : ComponentActivity() {
             }
         }
 
-        // Notification Listener
-        if (!hasNotificationListenerAccess()) {
-            startActivity(Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS))
-        }
-
-        // Uso de apps (estadísticas)
-        startActivity(Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS))
-        // DND (opcional)
+        // (Opcional) Acceso a uso de apps / DND / Noti listener los habilitamos después
+        // startActivity(Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS))
+        // startActivity(Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS))
         // startActivity(Intent(Settings.ACTION_NOTIFICATION_POLICY_ACCESS_SETTINGS))
-        // Accesibilidad (si la usas)
-        // startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))
-    }
-
-    private fun hasNotificationListenerAccess(): Boolean {
-        val enabled = Settings.Secure.getString(contentResolver, "enabled_notification_listeners")
-        return !enabled.isNullOrEmpty() && enabled.contains(packageName)
     }
 }
