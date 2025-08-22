@@ -42,3 +42,4 @@ gradle.properties
 
 # ignora cualquier gradle.properties
 **/gradle.properties
+app/src/main/java/com/angeluz/freyja/MainActivity.kt.bak
