@@ -9,7 +9,6 @@ on:
 jobs:
   build:
     runs-on: ubuntu-22.04
-
     steps:
       - uses: actions/checkout@v4
 
@@ -29,31 +28,59 @@ jobs:
       - name: Make gradlew executable
         run: chmod +x gradlew
 
-      - name: Decode keystore
-        run: |
-          echo "$KEYSTORE_BASE64" | base64 -d > freyja.jks
-        env:
-          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
-
-      - name: Build Release APK
+      - name: Build Release APK (unsigned)
         run: ./gradlew assembleRelease
+
+      - name: Decode keystore
+        run: echo "$ANDROID_KEYSTORE_BASE64" | base64 -d > freyja.jks
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
 
       - name: Sign APK
         run: |
           jarsigner -verbose -sigalg SHA256withRSA -digestalg SHA-256 \
             -keystore freyja.jks \
-            -storepass ${{ secrets.KEY_PASSWORD }} \
+            -storepass "${{ secrets.ANDROID_KEYSTORE_PASSWORD }}" \
             app/build/outputs/apk/release/app-release-unsigned.apk \
-            ${{ secrets.KEY_ALIAS }}
+            "${{ secrets.ANDROID_KEY_ALIAS }}"
+          mv app/build/outputs/apk/release/app-release-unsigned.apk freyja-release.apk
 
       - name: Verify Signature
-        run: jarsigner -verify app/build/outputs/apk/release/app-release-unsigned.apk
+        run: jarsigner -verify freyja-release.apk
 
-      - name: Rename signed APK
-        run: mv app/build/outputs/apk/release/app-release-unsigned.apk freyja-release.apk
-
-      - name: Upload Signed APK
+      - name: Upload Signed APK (artifact)
         uses: actions/upload-artifact@v4
         with:
           name: freyja-release
           path: freyja-release.apk
+          retention-days: 7
+
+  github_release:
+    needs: build
+    runs-on: ubuntu-22.04
+    permissions:
+      contents: write
+    steps:
+      - name: Download signed APK artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: freyja-release
+          path: .
+
+      # Opción A: usar tu token personal (RELEASE_TOKEN)
+      - name: Create GitHub Release (with APK)
+        uses: softprops/action-gh-release@v2
+        with:
+          files: freyja-release.apk
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.RELEASE_TOKEN }}
+
+      # Opción B (alternativa): usar GITHUB_TOKEN integrado
+      # - name: Create GitHub Release (with APK)
+      #   uses: softprops/action-gh-release@v2
+      #   with:
+      #     files: freyja-release.apk
+      #     generate_release_notes: true
+      #   env:
+      #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
