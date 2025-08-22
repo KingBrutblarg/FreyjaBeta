@@ -14,7 +14,15 @@ android {
         versionCode = 1
         versionName = "1.0"
     }
+dependencies {
+    // ...lo que ya tienes...
 
+    // Serialización JSON (para parsear respuestas si lo necesitas)
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.3")
+
+    // Para compat util (WorkManager ya lo tienes si lo usas luego)
+    implementation("androidx.localbroadcastmanager:localbroadcastmanager:1.1.0")
+}
     buildTypes {
         release {
             isMinifyEnabled = false
