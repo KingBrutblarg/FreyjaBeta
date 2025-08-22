@@ -25,7 +25,7 @@ jobs:
 
           echo "" >> new_entry.md
           echo "### 🔮 Mejoras Futuras:" >> new_entry.md
-          echo "- Integrar memoria persistente para los entrenamientos de combate." >> new_entry.md
+          echo "- Integrar memoria persistente para entrenamientos de combate." >> new_entry.md
           echo "- Añadir sistema de voz con *hotword* local (\"Despierta, Freyja\")." >> new_entry.md
           echo "- Modularizar UI para cambiar entre temas: grimorio rúnico, templo estelar, altar de fuego." >> new_entry.md
           echo "- Optimizar tamaño del APK aplicando shrinkResources y split por ABI." >> new_entry.md
