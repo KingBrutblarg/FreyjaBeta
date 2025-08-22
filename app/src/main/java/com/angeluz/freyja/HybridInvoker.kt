@@ -1,105 +1,85 @@
 package com.angeluz.freyja
 
-import android.content.Context
-import android.content.Intent
-import android.content.pm.PackageManager
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.flow.first
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
+import java.util.concurrent.TimeUnit
 
 /**
- * Orquestador híbrido de salida de voz:
- *  - TERMUX  -> termux-tts-speak
- *  - REMOTE  -> POST a un endpoint (JSON {"text": "..."})
- *  - NATIVE  -> TtsManager (Android)
+ * Invocador híbrido: decide a qué backend hablar según Pref.mode.
  */
-class HybridInvoker(
-    private val context: Context,
-    private val tts: TtsManager
-) {
+object HybridInvoker {
 
-    private val client by lazy { OkHttpClient() }
-    private val json = "application/json; charset=utf-8".toMediaType()
+    private val client: OkHttpClient by lazy {
+        OkHttpClient.Builder()
+            .callTimeout(30, TimeUnit.SECONDS)
+            .connectTimeout(15, TimeUnit.SECONDS)
+            .readTimeout(30, TimeUnit.SECONDS)
+            .writeTimeout(30, TimeUnit.SECONDS)
+            .build()
+    }
 
-    suspend fun speak(text: String): Result<String> {
-        val mode = Prefs.modeFlow(context).first()
+    private val JSON = "application/json; charset=utf-8".toMediaType()
+
+    data class ApiResult(
+        val code: Int,
+        val body: String?,
+        val ok: Boolean
+    )
+
+    // -------- util HTTP --------
+    private suspend fun postJson(
+        url: String,
+        jsonBody: String,
+        headers: Map<String, String> = emptyMap()
+    ): ApiResult = withContext(Dispatchers.IO) {
+        val body = jsonBody.toRequestBody(JSON)
+        val reqBuilder = Request.Builder().url(url).post(body)
+        headers.forEach { (k, v) -> reqBuilder.header(k, v) } // header() sobre el Builder
+        client.newCall(reqBuilder.build()).execute().use { resp ->
+            val bodyStr = resp.body?.string()
+            ApiResult(resp.code, bodyStr, resp.isSuccessful)
+        }
+    }
+
+    // -------- API pública de ejemplo --------
+    suspend fun speak(ctx: android.content.Context, payloadJson: String): ApiResult {
+        val mode = Pref.modeFlow(ctx).first()
         return when (mode) {
-            SpeakMode.TERMUX -> speakWithTermux(text)
-            SpeakMode.REMOTE -> speakRemote(text)
-            SpeakMode.NATIVE -> speakNative(text)
-        }
-    }
-
-    private fun speakNative(text: String): Result<String> = runCatching {
-        tts.speak(text)
-        "NATIVE"
-    }
-
-    private fun speakWithTermux(text: String): Result<String> = runCatching {
-        check(isTermuxInstalled()) { "Termux no instalado" }
-
-        val escaped = text.replace("'", "\\'")
-        val intent = Intent("com.termux.RUN_COMMAND").apply {
-            setClassName("com.termux", "com.termux.app.RunCommandService")
-            putExtra(
-                "com.termux.RUN_COMMAND_PATH",
-                "/data/data/com.termux/files/usr/bin/bash"
-            )
-            putExtra(
-                "com.termux.RUN_COMMAND_ARGUMENTS",
-                arrayOf("-lc", "termux-tts-speak '$escaped'")
-            )
-            putExtra("com.termux.RUN_COMMAND_BACKGROUND", true)
-            putExtra(
-                "com.termux.RUN_COMMAND_WORKDIR",
-                "/data/data/com.termux/files/home"
-            )
-        }
-        context.startService(intent)
-        "TERMUX"
-    }
-
-    private suspend fun speakRemote(text: String): Result<String> = runCatching {
-        withContext(Dispatchers.IO) {
-            val url = Prefs.urlFlow(context).first().ifEmpty {
-                error("URL remota no configurada")
+            SpeakMode.TERMUX -> {
+                // ejemplo: servicio local en el teléfono
+                postJson("http://127.0.0.1:11434/invoke", payloadJson)
             }
-            val token = Prefs.tokenFlow(context).first()
-
-            val body = """{"text":${text.asJsonString()}}""".toRequestBody(json)
-            val req = Request.Builder()
-                .url(url.ensureHttpScheme())
-                .addHeader("Accept", "application/json")
-                .apply { if (token.isNotEmpty()) addHeader("Authorization", "Bearer $token") }
-                .post(body)
-                .build()
-
-            client.newCall(req).execute().use { rsp ->
-                if (!rsp.isSuccessful) error("HTTP ${rsp.code}")
+            SpeakMode.REMOTE -> {
+                val url = Pref.urlFlow(ctx).first().ifBlank { "https://api.tu-servidor.com/invoke" }
+                val token = Pref.tokenFlow(ctx).first()
+                val headers = if (token.isNotBlank()) mapOf("Authorization" to "Bearer $token") else emptyMap()
+                postJson(url, payloadJson, headers)
             }
-            "REMOTE"
+            SpeakMode.NATIVE -> {
+                // Si tu modo nativo no requiere red, devuelve OK simulado
+                ApiResult(200, """{"status":"native-ok"}""", true)
+            }
         }
     }
 
-    private fun isTermuxInstalled(): Boolean =
-        try {
-            context.packageManager.getPackageInfo("com.termux", 0)
-            true
-        } catch (_: PackageManager.NameNotFoundException) {
-            false
+    // Fallback local->remoto
+    suspend fun smartInvoke(
+        ctx: android.content.Context,
+        localUrl: String,
+        remoteUrl: String,
+        jsonBody: String,
+        headersLocal: Map<String, String> = emptyMap(),
+        headersRemote: Map<String, String> = emptyMap()
+    ): ApiResult {
+        runCatching {
+            val r = postJson(localUrl, jsonBody, headersLocal)
+            if (r.ok) return r
         }
-
-    // Helpers
-    private fun String.ensureHttpScheme(): String =
-        if (startsWith("http://") || startsWith("https://")) this
-        else "http://$this"
-
-    private fun String.asJsonString(): String =
-        "\"" + replace("\\", "\\\\")
-            .replace("\"", "\\\"")
-            .replace("\n", "\\n") + "\""
+        return postJson(remoteUrl, jsonBody, headersRemote)
+    }
 }
