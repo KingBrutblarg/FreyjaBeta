@@ -1,4 +1,4 @@
-package com.angeluz.freyja.core
+package com.angeluz.freyja
 
 import android.app.NotificationChannel
 import android.app.NotificationManager
@@ -8,7 +8,6 @@ import android.content.Intent
 import android.os.Build
 import android.os.IBinder
 import androidx.core.app.NotificationCompat
-import com.angeluz.freyja.R
 
 class FreyjaService : Service() {
     private val CHANNEL_ID = "freyja_core"
@@ -23,7 +22,8 @@ class FreyjaService : Service() {
             .setOngoing(true)
             .build()
         startForeground(1226, notif)
-        // TODO: inicia aquí sensores/GPS/BT/reloj/escucha
+
+        // TODO: iniciar aquí sensores/GPS/BT/temporizadores
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
