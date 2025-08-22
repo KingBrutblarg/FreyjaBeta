@@ -1,4 +1,8 @@
 plugins {
+kotlin {
+    jvmToolchain(17)
+}
+
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
 }
@@ -17,6 +21,10 @@ android {
         vectorDrawables.useSupportLibrary = true
     }
 
+    compileOptions {
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
+    }
     buildTypes {
         getByName("debug") {
             // Mantén debug rápido
