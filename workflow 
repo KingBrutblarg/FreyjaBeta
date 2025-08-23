@@ -1,75 +1,67 @@
-name: Build & Release APK
+name: Update CHANGELOG
 
 on:
   push:
-    branches: ["main"]
-  workflow_dispatch:
-
-permissions:
-  contents: write
+    tags:
+      - "v*"
 
 jobs:
-  build:
+  changelog:
     runs-on: ubuntu-22.04
+    permissions:
+      contents: write
+    env:
+      DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
     steps:
-      - uses: actions/checkout@v4
-
-      - name: Set up Java 17 (Temurin)
-        uses: actions/setup-java@v4
+      - name: Checkout default branch (not the tag)
+        uses: actions/checkout@v4
         with:
-          distribution: temurin
-          java-version: "17"
-          cache: gradle
+          fetch-depth: 0
+          ref: ${{ github.event.repository.default_branch }}
 
-      - name: Set up Android SDK
-        uses: android-actions/setup-android@v3
-        with:
-          api-level: 34
-          build-tools: "34.0.0"
-          ndk: 25.1.8937393
-          cmdline-tools: latest
+      - name: Fetch tags
+        run: git fetch --tags --prune --force
 
-      - name: Configure Gradle cache
-        uses: gradle/actions/setup-gradle@v3
-
-      - name: Create local.properties (point SDK)
-        run: echo "sdk.dir=$ANDROID_SDK_ROOT" > local.properties
-
-      - name: Decode keystore
+      - name: Generate changelog entry
         run: |
-          mkdir -p app
-          printf '%s' "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" \
-          | tr -d '\r\n[:space:]' \
-          | base64 -d > app/freyja-release.p12
+          VERSION="${GITHUB_REF_NAME}"        # ej: v1.0.5
+          DATE=$(date +"%Y-%m-%d")
 
-      - name: Ensure AndroidX flags
+          # Tag anterior (excluyendo el actual)
+          PREV_TAG=$(git tag -l 'v*' --sort=-v:refname | grep -v "^${VERSION}$" | head -n1)
+
+          echo "## 🌌 Freyja ${VERSION} — Guardia Activa (${DATE})" > new_entry.md
+          echo "" >> new_entry.md
+          echo "### ✨ Cambios:" >> new_entry.md
+
+          if [ -n "$PREV_TAG" ]; then
+            git log "${PREV_TAG}..${VERSION}" --pretty=format:"- %s" >> new_entry.md || true
+          else
+            git log "${VERSION}" --pretty=format:"- %s" >> new_entry.md || echo "- Primera publicación" >> new_entry.md
+          fi
+
+          echo "" >> new_entry.md
+          echo "### 🔮 Mejoras Futuras:" >> new_entry.md
+          echo "- Integrar memoria persistente para entrenamientos de combate." >> new_entry.md
+          echo "- Añadir hotword local (\"Despierta, Freyja\")." >> new_entry.md
+          echo "- Temas intercambiables: grimorio rúnico / templo estelar / altar de fuego." >> new_entry.md
+          echo "- Reducir tamaño del APK: shrinkResources + splits por ABI." >> new_entry.md
+          echo "" >> new_entry.md
+          echo "---" >> new_entry.md
+          echo "" >> new_entry.md
+
+      - name: Update CHANGELOG.md
         run: |
-          touch gradle.properties
-          grep -q '^android.useAndroidX=true$' gradle.properties || echo 'android.useAndroidX=true' >> gradle.properties
-          grep -q '^android.enableJetifier=true$' gradle.properties || echo 'android.enableJetifier=true' >> gradle.properties
+          if [ -f CHANGELOG.md ]; then
+            cat new_entry.md CHANGELOG.md > CHANGELOG.tmp && mv CHANGELOG.tmp CHANGELOG.md
+          else
+            cat new_entry.md > CHANGELOG.md
+          fi
 
-      - name: Build release APK (signed)
+      - name: Commit and push changelog to default branch
         run: |
-          ./gradlew --no-daemon :app:assembleRelease \
-            -Pandroid.injected.signing.store.file=app/freyja-release.p12 \
-            -Pandroid.injected.signing.store.password="${{ secrets.ANDROID_KEYSTORE_PASSWORD }}" \
-            -Pandroid.injected.signing.key.alias="${{ secrets.ANDROID_KEY_ALIAS }}" \
-            -Pandroid.injected.signing.key.password="${{ secrets.ANDROID_KEY_PASSWORD }}"
-
-      - name: Upload signed APK
-        uses: actions/upload-artifact@v4
-        with:
-          name: app-release-signed
-          path: app/build/outputs/apk/release/*.apk
-          if-no-files-found: error
-
-      - name: Create GitHub Release (optional)
-        if: github.ref == 'refs/heads/main'
-        uses: softprops/action-gh-release@v2
-        with:
-          token: ${{ secrets.RELEASE_TOKEN }}
-          tag_name: build-${{ github.run_number }}.${{ github.run_attempt }}
-          name: "Build ${{ github.run_number }} (signed)"
-          make_latest: true
-          generate_release_notes: true
-          files: app/build/outputs/apk/release/*.apk
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add CHANGELOG.md
+          git commit -m "docs(changelog): update for ${GITHUB_REF_NAME}" || echo "No changes to commit"
+          git push origin HEAD:${DEFAULT_BRANCH}
