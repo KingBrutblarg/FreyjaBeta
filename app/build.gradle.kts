@@ -91,6 +91,7 @@ android {
 }
 
 dependencies {
+implementation("androidx.datastore:datastore-preferences:1.1.1")
     // ----- Compose BOM (mantiene versiones alineadas) -----
     val composeBom = platform("androidx.compose:compose-bom:2024.10.01")
     implementation(composeBom)
