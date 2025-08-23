@@ -1,5 +1,3 @@
-cd ~/FreyjaBeta
-cat > app/build.gradle.kts <<'KTS'
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
@@ -31,7 +29,6 @@ android {
         targetSdk = 34
         versionCode = 1
         versionName = "1.0.0"
-
         vectorDrawables.useSupportLibrary = true
     }
 
@@ -43,7 +40,6 @@ android {
 
     buildTypes {
         getByName("debug") {
-            // Mantén debug rápido
             isMinifyEnabled = false
             isShrinkResources = false
         }
@@ -85,7 +81,6 @@ android {
         )
     }
 
-    // Acelera tareas de test/instrumentación (si las agregamos luego)
     testOptions {
         animationsDisabled = true
         unitTests.isIncludeAndroidResources = true
@@ -122,4 +117,3 @@ dependencies {
     implementation("com.squareup.retrofit2:converter-moshi:2.11.0")
     implementation("com.squareup.moshi:moshi-kotlin:1.15.1")
 }
-KTS
