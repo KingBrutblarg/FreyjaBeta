@@ -4,25 +4,18 @@ import android.content.Context
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 
-/**
- * Puente “híbrido” para decidir cómo hablar/escuchar según el modo seleccionado.
- * - Usa Prefs.speakModeFlow para reaccionar a cambios
- * - Expone start()/stop() seguros
- */
-class HybridInvoker(
-    private val appContext: Context
-) {
+class HybridInvoker(private val appContext: Context) {
     private val scope = CoroutineScope(Dispatchers.Default + Job())
 
     @Volatile
     private var currentMode: SpeakMode = SpeakMode.OFF
 
     fun start() {
-        // Observa el modo y aplica estrategia
         scope.launch {
-            Prefs.run { appContext.speakModeFlow }.collect { mode ->
+            Prefs.run { appContext.speakModeFlow }.collectLatest { mode ->
                 if (mode != currentMode) {
                     stopInternal()
                     currentMode = mode
@@ -38,27 +31,20 @@ class HybridInvoker(
 
     private fun startInternal(mode: SpeakMode) {
         when (mode) {
-            SpeakMode.OFF -> {
-                // Nada. Podrías mostrar un toast/log si quieres.
-            }
+            SpeakMode.OFF -> Unit
             SpeakMode.PUSH_TO_TALK -> {
-                // Aquí arrancarías lógica de “mantener pulsado para hablar”
-                // Ejemplo simulado:
-                // pushToTalkEngine = PushToTalkEngine(...).also { it.start() }
+                // TODO: iniciar motor PTT
             }
             SpeakMode.WAKE_WORD -> {
-                // Aquí engancharías detector de palabra clave y TTS
-                // wakeWordEngine = HotwordEngine(...).also { it.start() }
+                // TODO: iniciar hotword
             }
         }
     }
 
     private fun stopInternal() {
-        // Apaga todo lo que tengas en curso. Este es un no-op ahora mismo.
-        // wakeWordEngine?.stop(); pushToTalkEngine?.stop(); tts?.shutdown() ...
+        // TODO: apagar motores si existen
     }
 
-    // Atajos de conveniencia para otras capas:
     fun setMode(mode: SpeakMode) {
         scope.launch { Prefs.setSpeakMode(appContext, mode) }
     }
