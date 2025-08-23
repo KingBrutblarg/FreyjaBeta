@@ -28,7 +28,7 @@ jobs:
       - name: Make gradlew executable
         run: chmod +x gradlew
 
-      - name: Build Release APK (unsigned)
+      - name: Build Release APKs (unsigned, con splits por ABI)
         run: ./gradlew assembleRelease
 
       - name: Decode keystore
@@ -36,23 +36,45 @@ jobs:
         env:
           ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
 
-      - name: Sign APK
+      - name: Sign split APKs
         run: |
-          jarsigner -verbose -sigalg SHA256withRSA -digestalg SHA-256 \
-            -keystore freyja.jks \
-            -storepass "${{ secrets.ANDROID_KEYSTORE_PASSWORD }}" \
-            app/build/outputs/apk/release/app-release-unsigned.apk \
-            "${{ secrets.ANDROID_KEY_ALIAS }}"
-          mv app/build/outputs/apk/release/app-release-unsigned.apk freyja-release.apk
+          mkdir -p dist
+          shopt -s nullglob
+          for f in app/build/outputs/apk/release/*-release-unsigned.apk; do
+            echo "Firmando: $f"
+            jarsigner -verbose -sigalg SHA256withRSA -digestalg SHA-256 \
+              -keystore freyja.jks \
+              -storepass "${{ secrets.ANDROID_KEYSTORE_PASSWORD }}" \
+              -keypass "${{ secrets.ANDROID_KEY_PASSWORD }}" \
+              "$f" "${{ secrets.ANDROID_KEY_ALIAS }}"
+            signed="${f/-unsigned/}"   # quita sufijo -unsigned
+            mv "$f" "$signed"
 
-      - name: Verify Signature
-        run: jarsigner -verify freyja-release.apk
+            base="$(basename "$signed")"
+            if [[ "$base" == *"arm64-v8a"* ]]; then
+              cp "$signed" dist/freyja-arm64-v8a.apk
+            elif [[ "$base" == *"armeabi-v7a"* ]]; then
+              cp "$signed" dist/freyja-armeabi-v7a.apk
+            elif [[ "$base" == *"x86_64"* ]]; then
+              cp "$signed" dist/freyja-x86_64.apk
+            else
+              cp "$signed" "dist/$base"
+            fi
+          done
+          ls -lh dist
 
-      - name: Upload Signed APK (artifact)
+      - name: Verify signatures
+        run: |
+          for a in dist/*.apk; do
+            echo "Verificando: $a"
+            jarsigner -verify "$a"
+          done
+
+      - name: Upload Signed APKs (artifacts)
         uses: actions/upload-artifact@v4
         with:
-          name: freyja-release
-          path: freyja-release.apk
+          name: freyja-release-splits
+          path: dist/*.apk
           retention-days: 7
 
   github_release:
@@ -61,16 +83,25 @@ jobs:
     permissions:
       contents: write
     steps:
-      - name: Download signed APK artifact
+      - name: Download signed APK artifacts
         uses: actions/download-artifact@v4
         with:
-          name: freyja-release
-          path: .
+          name: freyja-release-splits
+          path: dist
 
-      - name: Create GitHub Release (with APK)
+      - name: Create GitHub Release (attach all APKs)
         uses: softprops/action-gh-release@v2
         with:
-          files: freyja-release.apk
-          generate_release_notes: true
+          files: dist/*.apk
+          name: "🌌 Freyja ${{ github.ref_name }} — Guardia Activa"
+          body: |
+            ⚔️ **Invocación completada**
+            Versión `${{ github.ref_name }}` con APKs por arquitectura:
+
+            - **arm64-v8a** → `freyja-arm64-v8a.apk`
+            - **armeabi-v7a** → `freyja-armeabi-v7a.apk`
+            - **x86_64** → `freyja-x86_64.apk`
+
+            Incluye optimizaciones de compilación (Java/Kotlin 17), splits por ABI y firma automática.
         env:
           GITHUB_TOKEN: ${{ secrets.RELEASE_TOKEN }}
