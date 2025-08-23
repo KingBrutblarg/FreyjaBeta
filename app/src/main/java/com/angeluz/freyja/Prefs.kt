@@ -1,40 +1,29 @@
 package com.angeluz.freyja
 
 import android.content.Context
-import androidx.datastore.preferences.core.Preferences
-import androidx.datastore.preferences.core.edit
-import androidx.datastore.preferences.core.stringPreferencesKey
-import androidx.datastore.preferences.preferencesDataStore
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.map
-
-private const val DS_NAME = "freyja_prefs"
-
-private val Context.dataStore by preferencesDataStore(DS_NAME)
+import android.content.SharedPreferences
 
 object Prefs {
-    private val KEY_UNLOCKED = stringPreferencesKey("unlocked")
-    private val KEY_MODE     = stringPreferencesKey("speak_mode")
+    private const val NAME = "freyja_prefs"
+    private const val KEY_UNLOCKED = "unlocked"
+    private const val KEY_SPEAK_MODE = "speak_mode"
 
-    // Flow de desbloqueo (default: false)
-    val Context.isUnlockedFlow: Flow<Boolean>
-        get() = dataStore.data.map { it[KEY_UNLOCKED] == "1" }
+    private fun prefs(ctx: Context): SharedPreferences =
+        ctx.getSharedPreferences(NAME, Context.MODE_PRIVATE)
 
-    // Flow de modo de voz (default: OFF)
-    val Context.speakModeFlow: Flow<SpeakMode>
-        get() = dataStore.data.map { prefs ->
-            when (prefs[KEY_MODE]) {
-                "PUSH_TO_TALK" -> SpeakMode.PUSH_TO_TALK
-                "WAKE_WORD"    -> SpeakMode.WAKE_WORD
-                else           -> SpeakMode.OFF
-            }
-        }
+    fun isUnlocked(ctx: Context): Boolean =
+        prefs(ctx).getBoolean(KEY_UNLOCKED, false)
 
-    suspend fun setUnlocked(context: Context, unlocked: Boolean) {
-        context.dataStore.edit { it[KEY_UNLOCKED] = if (unlocked) "1" else "0" }
+    fun setUnlocked(ctx: Context, value: Boolean) {
+        prefs(ctx).edit().putBoolean(KEY_UNLOCKED, value).apply()
     }
 
-    suspend fun setSpeakMode(context: Context, mode: SpeakMode) {
-        context.dataStore.edit { it[KEY_MODE] = mode.name }
+    fun getSpeakMode(ctx: Context): SpeakMode {
+        val raw = prefs(ctx).getString(KEY_SPEAK_MODE, SpeakMode.NOTIFY.name)
+        return runCatching { SpeakMode.valueOf(raw!!) }.getOrElse { SpeakMode.NOTIFY }
+    }
+
+    fun setSpeakMode(ctx: Context, mode: SpeakMode) {
+        prefs(ctx).edit().putString(KEY_SPEAK_MODE, mode.name).apply()
     }
 }
