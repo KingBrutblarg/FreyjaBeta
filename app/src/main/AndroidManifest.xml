@@ -3,7 +3,12 @@
 
     <!-- Permisos -->
     <uses-permission
-        android:name="android.permission.BLUETOOTH_SCAN"
+       <!-- Android 9+ -->
+<uses-permission android:name="android.permission.FOREGROUND_SERVICE"/>
+<!-- Android 14+: especifica tipo, aquí lo usamos como dataSync -->
+<uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
+<!-- Android 13+: pedir notificaciones en tiempo de ejecución -->
+<uses-permission android:name="android.permission.POST_NOTIFICATIONS"/> android:name="android.permission.BLUETOOTH_SCAN"
         android:usesPermissionFlags="neverForLocation"/>
     <uses-feature android:name="android.hardware.bluetooth_le" android:required="false" />
     <uses-permission android:name="android.permission.INTERNET"/>
@@ -56,6 +61,7 @@ android:networkSecurityConfig="@xml/network_security_config"
         <service
             android:name=".FreyjaService"
             android:exported="false"
+    android:foregroundServiceType="dataSync"/>
             android:foregroundServiceType="location|microphone|camera|dataSync"/>
 
         <receiver
