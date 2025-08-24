@@ -25,8 +25,8 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.angeluz.freyja.Prefs
-import com.angeluz.freyja.data.remote.ChatRequest
-import com.angeluz.freyja.data.remote.RetrofitProvider
+import com.angeluz.freyja.data.data.ChatRequest
+import com.angeluz.freyja.data.data.RetrofitProvider
 import com.angeluz.freyja.ui.ChatViewModel
 import com.angeluz.freyja.ui.theme.RuneMist
 import kotlinx.coroutines.launch
