@@ -141,7 +141,7 @@ private fun MistLayer(infinite: InfiniteTransition, baseAlpha: Float, blurDp: Fl
                     error = null
                     scope.launch {
                         try {
-                            val res = RetrofitProvider.api.chat(
+                            val res = RetrofitProvider.RetrofitProvider.chat(
                                 ChatRequest(prompt, temp.toDouble())
                             )
                             if (debug) {
