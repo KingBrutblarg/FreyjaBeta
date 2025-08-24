@@ -50,7 +50,7 @@ private fun MistLayer(infinite: InfiniteTransition, baseAlpha: Float, blurDp: Fl
     )
 }
 
-@Composable fun FreyjaScreen(vm: ChatViewModel = androidx.lifecycle.viewmodel.compose.viewModel()) {
+@Composable fun FreyjaScreen(vm: ChatViewModel)) {
     val ctx = LocalContext.current
     val reply by vm.reply.collectAsState(initial = "")
 
@@ -98,7 +98,7 @@ private fun MistLayer(infinite: InfiniteTransition, baseAlpha: Float, blurDp: Fl
                 )
             } else {
                 OutlinedButton(onClick = { showUnlock = true }) {
-                    Text("Desbloquear bóveda (1226)")
+                    Text(text = "Desbloquear bóveda (1226)")
                 }
             }
 
@@ -126,7 +126,7 @@ private fun MistLayer(infinite: InfiniteTransition, baseAlpha: Float, blurDp: Fl
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text("Modo debug (JSON)")
+                Text(text = "Modo debug (JSON)")
                 Switch(checked = debug, onCheckedChange = { debug = it })
             }
 

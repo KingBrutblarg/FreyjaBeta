@@ -13,7 +13,7 @@ class MainActivity : ComponentActivity() {
         // Evita trabajo pesado en UI aquí; inicializa perezoso
         setContent {
             MaterialTheme {
-                FreyjaScreen()
+                FreyjaScreen(vm = ChatViewModel(), )
             }
         }
     }
