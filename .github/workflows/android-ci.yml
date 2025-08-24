@@ -17,21 +17,15 @@ jobs:
           distribution: temurin
           java-version: "17"
 
-      - name: Set up Android SDK (cmdline-tools only)
+      - name: Set up Android SDK
         uses: android-actions/setup-android@v3
         with:
           accept-android-sdk-licenses: true
           cmdline-tools-version: 11076708
-
-      - name: Accept Android SDK licenses
-        run: yes | "${ANDROID_SDK_ROOT}/cmdline-tools/latest/bin/sdkmanager" --licenses
-
-      - name: Install required SDK packages
-        run: |
-          "${ANDROID_SDK_ROOT}/cmdline-tools/latest/bin/sdkmanager" \
-            "platforms;android-34" \
-            "build-tools;34.0.0" \
-            "platform-tools"
+          packages: |
+            platforms;android-34
+            build-tools;34.0.0
+            platform-tools
 
       - name: Create local.properties
         run: echo "sdk.dir=$ANDROID_SDK_ROOT" > local.properties
@@ -40,9 +34,10 @@ jobs:
         run: chmod +x gradlew
 
       - name: Assemble Release
-        run: ./gradlew --no-daemon assembleRelease
+        run: ./gradlew --no-daemon --stacktrace assembleRelease
 
       - name: Upload APK
+        if: success()
         uses: actions/upload-artifact@v4
         with:
           name: app-release
