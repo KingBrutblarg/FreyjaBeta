@@ -1,4 +1,4 @@
 <resources>
-    <!-- Tema base para Compose (Material3 oscuro, sin ActionBar) -->
-    <style name="Theme.Freyja" parent="Theme.Material3.Dark.NoActionBar"/>
+    <!-- Tema seguro basado en Material Components -->
+    <style name="Theme.Freyja" parent="Theme.Material3.DayNight.NoActionBar" />
 </resources>
