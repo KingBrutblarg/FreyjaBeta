@@ -1,5 +1,4 @@
 package com.angeluz.freyja
-import com.angeluz.freyja.Prefs.SpeakMode
 import com.angeluz.freyja.Prefs
 
 import android.content.Context
