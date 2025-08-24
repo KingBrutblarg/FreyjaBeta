@@ -49,4 +49,8 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: app-release
+<<<<<<< HEAD
           path: app/build/outputs/apk/release/*.apk
+=======
+          path: app/build/outputs/apk/release/*.apk
+>>>>>>> f7ae189 (ci: proper SDK setup + non-interactive license + assembleRelease + artifact)
