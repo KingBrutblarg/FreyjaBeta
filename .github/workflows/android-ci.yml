@@ -17,15 +17,27 @@ jobs:
           distribution: temurin
           java-version: "17"
 
+      # Workaround: aceptar licencias ANTES (usa el sdkmanager preinstalado)
+      - name: Pre-accept Android SDK licenses (workaround)
+        run: |
+          yes | /usr/local/lib/android/sdk/cmdline-tools/latest/bin/sdkmanager --licenses || true
+
+      # Instala cmdline-tools + paquetes y (en teoría) acepta licencias
       - name: Set up Android SDK
         uses: android-actions/setup-android@v3
         with:
-          accept-android-sdk-licenses: true
           cmdline-tools-version: 11076708
+          accept-android-sdk-licenses: true
+          log-accepted-android-sdk-licenses: true
           packages: |
-            platforms;android-34
-            build-tools;34.0.0
             platform-tools
+            build-tools;34.0.0
+            platforms;android-34
+
+      # Por si acaso, vuelve a aceptar licencias usando la ruta "latest" que instala el action
+      - name: Post-accept Android SDK licenses (belt & suspenders)
+        run: |
+          yes | "${ANDROID_SDK_ROOT}/cmdline-tools/latest/bin/sdkmanager" --licenses || true
 
       - name: Create local.properties
         run: echo "sdk.dir=$ANDROID_SDK_ROOT" > local.properties
@@ -34,10 +46,9 @@ jobs:
         run: chmod +x gradlew
 
       - name: Assemble Release
-        run: ./gradlew --no-daemon --stacktrace assembleRelease
+        run: ./gradlew --no-daemon assembleRelease
 
       - name: Upload APK
-        if: success()
         uses: actions/upload-artifact@v4
         with:
           name: app-release
