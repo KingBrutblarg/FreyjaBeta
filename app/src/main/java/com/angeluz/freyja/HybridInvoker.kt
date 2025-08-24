@@ -1,4 +1,6 @@
 package com.angeluz.freyja
+import com.angeluz.freyja.Prefs.SpeakMode
+import com.angeluz.freyja.Prefs
 
 import android.content.Context
 import kotlinx.coroutines.CoroutineScope
@@ -11,11 +13,11 @@ class HybridInvoker(private val appContext: Context) {
     private val scope = CoroutineScope(Dispatchers.Default + Job())
 
     @Volatile
-    private var currentMode: SpeakMode = SpeakMode.OFF
+    private var currentMode: SpeakMode = SpeakMode.SpeakMode.SpeakMode.OFF
 
     fun start() {
         scope.launch {
-            Prefs.run { appContext.speakModeFlow }.collectLatest { mode ->
+            Prefs.run { appContext.Prefs.Prefs.speakModeFlow }.collectLatest { mode -> mode -> mode ->
                 if (mode != currentMode) {
                     stopInternal()
                     currentMode = mode
@@ -31,11 +33,11 @@ class HybridInvoker(private val appContext: Context) {
 
     private fun startInternal(mode: SpeakMode) {
         when (mode) {
-            SpeakMode.OFF -> Unit
-            SpeakMode.PUSH_TO_TALK -> {
+            SpeakMode.SpeakMode.SpeakMode.OFF -> Unit
+            SpeakMode.SpeakMode.SpeakMode.PUSH_TO_TALK -> {
                 // TODO: iniciar motor PTT
             }
-            SpeakMode.WAKE_WORD -> {
+            SpeakMode.SpeakMode.SpeakMode.WAKE_WORD -> {
                 // TODO: iniciar hotword
             }
         }
