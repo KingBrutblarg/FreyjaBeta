@@ -17,16 +17,24 @@ jobs:
           distribution: temurin
           java-version: '17'
 
-      # Instala cmdline-tools y paquetes del SDK con sdkmanager
-      - name: Set up Android SDK
+      # Solo instala cmdline-tools y configura ANDROID_SDK_ROOT + PATH
+      - name: Set up Android SDK (cmdline-tools only)
         uses: android-actions/setup-android@v3
         with:
           accept-android-sdk-licenses: true
           cmdline-tools-version: 11076708
-          packages: |
-            platforms;android-34
-            build-tools;34.0.0
-            platform-tools
+
+      # Aceptar todas las licencias de forma no interactiva
+      - name: Accept Android SDK licenses
+        run: yes | "${ANDROID_SDK_ROOT}/cmdline-tools/latest/bin/sdkmanager" --licenses
+
+      # Instalar explícitamente los paquetes requeridos
+      - name: Install required SDK packages
+        run: |
+          "${ANDROID_SDK_ROOT}/cmdline-tools/latest/bin/sdkmanager" \
+            "platforms;android-34" \
+            "build-tools;34.0.0" \
+            "platform-tools"
 
       - name: Create local.properties
         run: echo "sdk.dir=$ANDROID_SDK_ROOT" > local.properties
