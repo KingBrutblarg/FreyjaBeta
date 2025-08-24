@@ -13,11 +13,11 @@ class HybridInvoker(private val appContext: Context) {
     private val scope = CoroutineScope(Dispatchers.Default + Job())
 
     @Volatile
-    private var currentMode: SpeakMode = SpeakMode.SpeakMode.SpeakMode.OFF
+    private var currentMode: SpeakMode = SpeakMode.OFF
 
     fun start() {
         scope.launch {
-            Prefs.run { appContext.Prefs.Prefs.speakModeFlow }.collectLatest { mode -> mode -> mode ->
+            Prefs.run { Prefs.speakModeFlow }.collectLatest { mode: SpeakMode ->
                 if (mode != currentMode) {
                     stopInternal()
                     currentMode = mode
@@ -33,11 +33,11 @@ class HybridInvoker(private val appContext: Context) {
 
     private fun startInternal(mode: SpeakMode) {
         when (mode) {
-            SpeakMode.SpeakMode.SpeakMode.OFF -> Unit
-            SpeakMode.SpeakMode.SpeakMode.PUSH_TO_TALK -> {
+            SpeakMode.OFF -> Unit
+            SpeakMode.PUSH_TO_TALK -> {
                 // TODO: iniciar motor PTT
             }
-            SpeakMode.SpeakMode.SpeakMode.WAKE_WORD -> {
+            SpeakMode.WAKE_WORD -> {
                 // TODO: iniciar hotword
             }
         }

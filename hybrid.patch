@@ -1,0 +1,53 @@
+*** a/app/src/main/java/com/angeluz/freyja/HybridInvoker.kt
+--- b/app/src/main/java/com/angeluz/freyja/HybridInvoker.kt
+***************
+*** 1,1 ***
+ package com.angeluz.freyja
++
++import kotlinx.coroutines.flow.collectLatest
++// TODO: AJUSTAR estos imports según tu paquete real:
++// Si SpeakMode está anidado en Prefs:
++// import <TU.PAQUETE>.Prefs
++// import <TU.PAQUETE>.Prefs.SpeakMode
++// Si SpeakMode es un enum aparte:
++// import <TU.PAQUETE>.SpeakMode
+***************
+*** 17,40 ****
+     fun start() {
+         scope.launch {
+-            Prefs.run { appContext.Prefs.Prefs.speakModeFlow }.collectLatest { mode -> mode -> mode ->
+-                if (mode != currentMode) {
+-                    stopInternal()
+-                    currentMode = mode
+-                    when (mode) {
+-                        SpeakMode.SpeakMode.SpeakMode.OFF -> Unit
+-                        SpeakMode.SpeakMode.SpeakMode.PUSH_TO_TALK -> {
+-                            // TODO: iniciar motor PTT
+-                        }
+-
+-        else -> Unit
+-    }
+-                        SpeakMode.SpeakMode.SpeakMode.WAKE_WORD -> {
+-                            // TODO: iniciar hotword
+-                        }
+-                    }
+-                }
+-            }
++            // REEMPLAZA "Prefs.speakModeFlow" por la referencia correcta a tu Flow<SpeakMode>
++            Prefs.speakModeFlow.collectLatest { mode: SpeakMode ->
++                if (mode == currentMode) return@collectLatest
++                stopInternal()
++                currentMode = mode
++                when (mode) {
++                    SpeakMode.OFF -> Unit
++                    SpeakMode.PUSH_TO_TALK -> {
++                        // TODO: iniciar motor PTT
++                    }
++                    SpeakMode.WAKE_WORD -> {
++                        // TODO: iniciar hotword
++                    }
++                }
++            }
+         }
+     }
+*** End Patch
