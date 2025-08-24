@@ -1,4 +1,3 @@
-cat > app/src/main/java/com/angeluz/freyja/ui/screens/UnlockDialog.kt <<'KT'
 package com.angeluz.freyja.ui.screens
 
 import android.content.Context
@@ -55,4 +54,3 @@ fun UnlockDialog(
         }
     )
 }
-KT

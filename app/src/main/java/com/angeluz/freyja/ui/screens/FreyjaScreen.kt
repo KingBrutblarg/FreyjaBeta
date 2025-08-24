@@ -1,7 +1,12 @@
-cat > app/src/main/java/com/angeluz/freyja/ui/screens/FreyjaScreen.kt <<'KT'
 package com.angeluz.freyja.ui.screens
 
-import androidx.compose.animation.core.*
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.InfiniteTransition
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -116,7 +121,7 @@ fun FreyjaScreen(vm: ChatViewModel) {
                 )
             }
 
-            // Conmutador debug
+            // Conmutador debug (muestra JSON o solo reply)
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -175,7 +180,7 @@ fun FreyjaScreen(vm: ChatViewModel) {
         }
     }
 
-    // Diálogo de desbloqueo
+    // Diálogo de desbloqueo (1226)
     if (showUnlock) {
         UnlockDialog(
             context = ctx,
@@ -187,4 +192,3 @@ fun FreyjaScreen(vm: ChatViewModel) {
         )
     }
 }
-KT
