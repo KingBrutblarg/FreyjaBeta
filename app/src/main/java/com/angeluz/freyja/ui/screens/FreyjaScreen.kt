@@ -50,8 +50,7 @@ private fun MistLayer(infinite: InfiniteTransition, baseAlpha: Float, blurDp: Fl
     )
 }
 
-@Composable
-fun FreyjaScreen(vm: ChatViewModel) {
+@Composable fun FreyjaScreen(vm: ChatViewModel = androidx.lifecycle.viewmodel.compose.viewModel()) {
     val ctx = LocalContext.current
     val reply by vm.reply.collectAsState(initial = "")
 
@@ -107,7 +106,7 @@ fun FreyjaScreen(vm: ChatViewModel) {
             OutlinedTextField(
                 value = prompt,
                 onValueChange = { prompt = it },
-                label = { Text("Háblame, Ezlhan…") },
+                label = { Text(text = "Háblame, Ezlhan…") },
                 modifier = Modifier.fillMaxWidth()
             )
 
@@ -156,7 +155,7 @@ fun FreyjaScreen(vm: ChatViewModel) {
                 },
                 enabled = !loading,
                 modifier = Modifier.fillMaxWidth()
-            ) { Text(if (loading) "Invocando…" else "Invocar a Freyja") }
+            ) { Text(text = if (loading) "Invocando…" else "Invocar a Freyja") }
 
             // Respuesta
             if (reply.isNotBlank()) {
@@ -175,7 +174,7 @@ fun FreyjaScreen(vm: ChatViewModel) {
 
             // Error
             error?.let {
-                Text("Error: $it", color = MaterialTheme.colorScheme.error)
+                Text(text = "Error: $it", color = MaterialTheme.colorScheme.error)
             }
         }
     }
