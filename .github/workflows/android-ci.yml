@@ -17,27 +17,25 @@ jobs:
           distribution: temurin
           java-version: "17"
 
-      # Workaround: aceptar licencias ANTES (usa el sdkmanager preinstalado)
-      - name: Pre-accept Android SDK licenses (workaround)
-        run: |
-          yes | /usr/local/lib/android/sdk/cmdline-tools/latest/bin/sdkmanager --licenses || true
-
-      # Instala cmdline-tools + paquetes y (en teoría) acepta licencias
-      - name: Set up Android SDK
+      # Solo instala cmdline-tools
+      - name: Set up Android cmdline-tools
         uses: android-actions/setup-android@v3
         with:
           cmdline-tools-version: 11076708
-          accept-android-sdk-licenses: true
-          log-accepted-android-sdk-licenses: true
-          packages: |
-            platform-tools
-            build-tools;34.0.0
-            platforms;android-34
 
-      # Por si acaso, vuelve a aceptar licencias usando la ruta "latest" que instala el action
-      - name: Post-accept Android SDK licenses (belt & suspenders)
+      # Acepta TODAS las licencias de forma no interactiva
+      - name: Accept Android SDK licenses
         run: |
+          yes | "${ANDROID_SDK_ROOT}/cmdline-tools/12.0/bin/sdkmanager" --licenses || true
           yes | "${ANDROID_SDK_ROOT}/cmdline-tools/latest/bin/sdkmanager" --licenses || true
+
+      # Instala los paquetes necesarios del SDK
+      - name: Install required SDK packages
+        run: |
+          "${ANDROID_SDK_ROOT}/cmdline-tools/12.0/bin/sdkmanager" \
+            "platform-tools" \
+            "build-tools;34.0.0" \
+            "platforms;android-34"
 
       - name: Create local.properties
         run: echo "sdk.dir=$ANDROID_SDK_ROOT" > local.properties
