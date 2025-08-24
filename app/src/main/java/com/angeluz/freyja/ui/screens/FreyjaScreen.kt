@@ -1,4 +1,7 @@
 package com.angeluz.freyja.ui.screens
+import com.angeluz.freyja.data.ChatRequest
+import com.angeluz.freyja.data.RetrofitProvider
+import com.angeluz.freyja.ChatViewModel
 
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.InfiniteTransition
