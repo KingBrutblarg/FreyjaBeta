@@ -17,18 +17,15 @@ jobs:
           distribution: temurin
           java-version: '17'
 
-      # Solo instala cmdline-tools y configura ANDROID_SDK_ROOT + PATH
       - name: Set up Android SDK (cmdline-tools only)
         uses: android-actions/setup-android@v3
         with:
           accept-android-sdk-licenses: true
           cmdline-tools-version: 11076708
 
-      # Aceptar todas las licencias de forma no interactiva
       - name: Accept Android SDK licenses
         run: yes | "${ANDROID_SDK_ROOT}/cmdline-tools/latest/bin/sdkmanager" --licenses
 
-      # Instalar explícitamente los paquetes requeridos
       - name: Install required SDK packages
         run: |
           "${ANDROID_SDK_ROOT}/cmdline-tools/latest/bin/sdkmanager" \
@@ -49,8 +46,4 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: app-release
-<<<<<<< HEAD
           path: app/build/outputs/apk/release/*.apk
-=======
-          path: app/build/outputs/apk/release/*.apk
->>>>>>> f7ae189 (ci: proper SDK setup + non-interactive license + assembleRelease + artifact)
