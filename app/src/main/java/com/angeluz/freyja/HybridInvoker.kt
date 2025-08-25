@@ -16,13 +16,18 @@ class HybridInvoker(private val appContext: Context) {
 
     fun start() {
         scope.launch {
-            Prefs.run { Prefs.speakModeFlow }.collectLatest { mode: SpeakMode ->
-                if (mode != currentMode) {
-                    stopInternal()
-                    currentMode = mode
-                    startInternal(mode)
+            Prefs.speakModeFlow.collectLatest { mode ->
+                if (mode == currentMode) return
+                stopInternal()
+                currentMode = mode
+                when (mode) {
+                    com.angeluz.freyja.SpeakMode.OFF -> Unit
+                    com.angeluz.freyja.SpeakMode.PUSH_TO_TALK -> { }
+                    com.angeluz.freyja.SpeakMode.WAKE_WORD -> { }
                 }
             }
+        }
+    }
         }
     }
 
