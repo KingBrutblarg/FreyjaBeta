@@ -1,4 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- Tema seguro basado en Material Components -->
-    <style name="Theme.Freyja" parent="Theme.Material3.DayNight.NoActionBar" />
+
+    <!-- Alias para compatibilidad: algunos recursos buscan exactamente este nombre -->
+    <style name="Theme.Material3.DayNight.NoActionBar" parent="Theme.Material3.DayNight">
+        <!-- NoActionBar equivalente -->
+        <item name="android:windowActionBar">false</item>
+        <item name="android:windowNoTitle">true</item>
+        <!-- (Opcional) status bar transparente si usas Compose full-screen -->
+        <item name="android:statusBarColor">@android:color/transparent</item>
+    </style>
+
+    <!-- Tu tema real (por si styles.xml es la única fuente que lee el build) -->
+    <style name="Theme.Freyja" parent="Theme.Material3.DayNight">
+        <item name="android:windowActionBar">false</item>
+        <item name="android:windowNoTitle">true</item>
+        <item name="android:statusBarColor">@android:color/transparent</item>
+    </style>
+
 </resources>
