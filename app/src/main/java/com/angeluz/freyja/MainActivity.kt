@@ -11,10 +11,8 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
-            MaterialTheme {
-                Surface {
-                    ChatScreen()
-                }
+            Surface(color = MaterialTheme.colorScheme.background) {
+                ChatScreen()
             }
         }
     }
