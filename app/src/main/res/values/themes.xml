@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- Tema real de la app -->
-    <style name="Theme.Freyja" parent="Theme.AppCompat.DayNight.NoActionBar">
-        <!-- (Opcional) status bar transparente si usas Compose full-screen -->
+    <!-- Tema real de la app: padre 100% disponible en el framework -->
+    <style name="Theme.Freyja" parent="@android:style/Theme.DeviceDefault.NoActionBar">
+        <!-- Opcional: status bar transparente si usas Compose fullscreen -->
         <item name="android:statusBarColor">@android:color/transparent</item>
     </style>
 </resources>
