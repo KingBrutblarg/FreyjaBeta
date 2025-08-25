@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
-<manifest xmlns:android="http://schemas.android.com/apk/res/android"
-   >
-    <uses-permission android:name="android.permission.INTERNET"/>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <uses-permission android:name="android.permission.INTERNET" />
 
     <application
         android:allowBackup="true"
@@ -10,7 +10,7 @@
         android:roundIcon="@mipmap/ic_launcher"
         android:supportsRtl="true"
         android:theme="@style/Theme.Freyja">
-        <!-- Main activity -->
+
         <activity
             android:name=".MainActivity"
             android:exported="true"
@@ -22,12 +22,6 @@
             </intent-filter>
         </activity>
 
-        <!-- Si usas un ForegroundService, déjalo declarado; si no, bórralo -->
-        <!--
-        <service
-            android:name=".FreyjaService"
-            android:exported="false"
-            android:foregroundServiceType="mediaPlayback|connectedDevice" />
-        -->
+        <!-- Si no usas servicios, no declares nada extra -->
     </application>
 </manifest>
