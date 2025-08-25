@@ -18,32 +18,24 @@ android {
         versionCode = 1
         versionName = "1.0.0"
 
-        // 👇 Cambia a tu endpoint real y que termine en "/"
+        // Base URL para Retrofit (debe terminar en "/")
         buildConfigField("String", "API_BASE_URL", "\"https://tu-backend.tld/\"")
+
+        vectorDrawables.useSupportLibrary = true
     }
 
     buildTypes {
-        getByName("debug") {
+        debug {
             isMinifyEnabled = false
             isShrinkResources = false
         }
-        getByName("release") {
+        release {
             isMinifyEnabled = true
             isShrinkResources = true
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
-        }
-    }
-
-    // APKs por ABI: más livianos
-    splits {
-        abi {
-            isEnable = true
-            reset()
-            include("armeabi-v7a", "arm64-v8a", "x86_64")
-            isUniversalApk = false
         }
     }
 
@@ -57,14 +49,26 @@ android {
         kotlinCompilerExtensionVersion = "1.5.15"
     }
 
+    kotlinOptions {
+        jvmTarget = "17"
+        freeCompilerArgs += listOf(
+            "-Xjvm-default=all",
+            "-Xcontext-receivers"
+        )
+    }
+
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
     }
 
-    kotlinOptions {
-        jvmTarget = "17"
-        freeCompilerArgs += listOf("-Xjvm-default=all")
+    splits {
+        abi {
+            isEnable = true
+            reset()
+            include("armeabi-v7a", "arm64-v8a", "x86_64")
+            isUniversalApk = false
+        }
     }
 
     packaging {
@@ -84,26 +88,34 @@ android {
 }
 
 dependencies {
-    // ----- Compose BOM (mantiene versiones alineadas) -----
-    val composeBom = platform("androidx.compose:compose-bom:2024.10.01")
-    implementation(composeBom)
-    androidTestImplementation(composeBom)
+    // Compose núcleo (versiones alineadas)
+    implementation("androidx.activity:activity-compose:1.9.2")
+    implementation("androidx.compose.ui:ui:1.7.0")
+    implementation("androidx.compose.ui:ui-tooling-preview:1.7.0")
+    debugImplementation("androidx.compose.ui:ui-tooling:1.7.0")
+    implementation("androidx.compose.material3:material3:1.3.0")
 
-    implementation("androidx.core:core-ktx:1.13.1")
+    // Lifecycle + ViewModel + Compose integration
     implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.8.4")
     implementation("androidx.lifecycle:lifecycle-viewmodel-ktx:2.8.4")
-    implementation("androidx.activity:activity-compose:1.9.2")
-    implementation("androidx.compose.ui:ui")
-    implementation("androidx.compose.ui:ui-tooling-preview")
-    implementation("androidx.compose.material3:material3")
-    debugImplementation("androidx.compose.ui:ui-tooling")
+    implementation("androidx.lifecycle:lifecycle-runtime-compose:2.8.4")
+    implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.8.4")
 
-    // Coroutines
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.8.1")
+    // Core
+    implementation("androidx.core:core-ktx:1.13.1")
+
+    // DataStore (si lo necesitas)
+    implementation("androidx.datastore:datastore-preferences:1.1.1")
+
+    // Imágenes
+    implementation("io.coil-kt:coil-compose:2.6.0")
 
     // Networking
     implementation("com.squareup.okhttp3:okhttp:4.12.0")
     implementation("com.squareup.retrofit2:retrofit:2.11.0")
     implementation("com.squareup.retrofit2:converter-moshi:2.11.0")
     implementation("com.squareup.moshi:moshi-kotlin:1.15.1")
+
+    // Coroutines
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.8.1")
 }
