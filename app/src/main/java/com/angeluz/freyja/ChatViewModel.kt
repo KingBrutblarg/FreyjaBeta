@@ -18,15 +18,15 @@ class ChatViewModel : ViewModel() {
     private val _error = MutableStateFlow<String?>(null)
     val error: StateFlow<String?> = _error
 
-    fun send(message: String) {
+    fun send(prompt: String) {
         viewModelScope.launch {
-            _error.value = null
             _loading.value = true
+            _error.value = null
             try {
-                val res = RetrofitProvider.sendChat(ChatRequest(message))
-                _reply.value = res
-            } catch (t: Throwable) {
-                _error.value = t.message ?: "Error desconocido"
+                val r = RetrofitProvider.api.chat(ChatRequest(prompt))
+                _reply.value = r.text
+            } catch (e: Exception) {
+                _error.value = e.message ?: "Error de red"
             } finally {
                 _loading.value = false
             }
