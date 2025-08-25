@@ -3,69 +3,66 @@ package com.angeluz.freyja.ui.screens
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
-<<<<<<< HEAD
 import androidx.compose.ui.Alignment
-=======
->>>>>>> fb03f9f (feat(chat): UI ChatScreen + ajustes en ChatViewModel)
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.angeluz.freyja.ChatViewModel
 
 @Composable
-fun ChatScreen(vm: ChatViewModel = ChatViewModel()) {
-    var prompt by remember { mutableStateOf("") }
-<<<<<<< HEAD
+fun ChatScreen(vm: ChatViewModel = viewModel()) {
+    val input by vm.input.collectAsState()
     val reply by vm.reply.collectAsState()
     val loading by vm.loading.collectAsState()
     val error by vm.error.collectAsState()
 
     Column(
-        Modifier
+        modifier = Modifier
             .fillMaxSize()
             .padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
-=======
-    val reply by vm.reply.collectAsState(null)
-    val loading by vm.loading.collectAsState(false)
-    val error by vm.error.collectAsState(null)
-
-    Column(
-        modifier = Modifier.padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp)
->>>>>>> fb03f9f (feat(chat): UI ChatScreen + ajustes en ChatViewModel)
     ) {
+        Text("Freyja Chat", style = MaterialTheme.typography.titleLarge)
+
         OutlinedTextField(
-            value = prompt,
-            onValueChange = { prompt = it },
-            label = { Text("Háblame, Ezlhan…") },
-            modifier = Modifier.fillMaxWidth()
+            value = input,
+            onValueChange = vm::onInputChange,
+            label = { Text("Escribe tu mensaje") },
+            modifier = Modifier.fillMaxWidth(),
+            singleLine = true
         )
+
         Button(
-<<<<<<< HEAD
-            onClick = { vm.send(prompt.trim()) },
-            enabled = !loading && prompt.isNotBlank(),
-=======
-            onClick = { if (prompt.isNotBlank()) vm.ask(prompt) },
-            enabled = !loading,
->>>>>>> fb03f9f (feat(chat): UI ChatScreen + ajustes en ChatViewModel)
-            modifier = Modifier.fillMaxWidth()
+            onClick = vm::send,
+            enabled = !loading && input.isNotBlank(),
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(48.dp)
         ) {
-            Text(if (loading) "Invocando…" else "Invocar a Freyja")
+            Text(if (loading) "Enviando…" else "Enviar")
         }
-<<<<<<< HEAD
-        when {
-            error != null -> Text(
-                "Error: $error",
-                color = MaterialTheme.colorScheme.error
-            )
-            reply != null -> Text("Freyja dice: ${reply!!}")
+
+        if (error != null) {
+            Text("Error: $error", color = MaterialTheme.colorScheme.error)
         }
+
+        reply?.let {
+            Surface(
+                tonalElevation = 2.dp,
+                shape = MaterialTheme.shapes.medium,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text(
+                    text = it,
+                    modifier = Modifier.padding(16.dp)
+                )
+            }
+        }
+
+        Spacer(Modifier.weight(1f))
+        Text(
+            "Base URL: " + com.angeluz.freyja.BuildConfig.API_BASE_URL,
+            style = MaterialTheme.typography.bodySmall
+        )
     }
 }
-=======
-        error?.let { Text("Error: $it", color = MaterialTheme.colorScheme.error) }
-        reply?.let { Text("Freyja dice: $it") }
-    }
-}
->>>>>>> fb03f9f (feat(chat): UI ChatScreen + ajustes en ChatViewModel)
