@@ -7,7 +7,7 @@ import kotlinx.coroutines.flow.collectLatest
 class HybridInvoker(private val appContext: Context) {
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
-    private var currentMode: SpeakMode = SpeakMode.OFF
+    private var currentMode: SpeakMode = SpeakMode.SILENT
 
     fun start() {
         scope.launch {
@@ -16,11 +16,11 @@ class HybridInvoker(private val appContext: Context) {
                 stopInternal()
                 currentMode = mode
                 when (mode) {
-                    SpeakMode.OFF -> Unit
-                    SpeakMode.PUSH_TO_TALK -> {
+                    SpeakMode.SILENT -> Unit
+                    SpeakMode.NOTIFY -> {
                         // TODO iniciar PTT
                     }
-                    SpeakMode.WAKE_WORD -> {
+                    SpeakMode.VOICE -> {
                         // TODO iniciar hotword
                     }
                 }
