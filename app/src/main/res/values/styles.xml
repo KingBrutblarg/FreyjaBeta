@@ -1,5 +1,4 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- Alias para compatibilidad -->
     <style name="Theme.Material3.DayNight.NoActionBar" parent="Theme.Freyja" />
 </resources>
