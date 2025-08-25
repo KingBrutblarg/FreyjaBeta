@@ -24,6 +24,7 @@ android {
     compileSdk = 34
 
     defaultConfig {
+        buildConfigField("String", "IMG_API_KEY", "\"1226\"")
         applicationId = "com.angeluz.freyja"
         minSdk = 24
         targetSdk = 34
@@ -88,6 +89,8 @@ android {
 }
 
 dependencies {
+    implementation("io.coil-kt:coil-compose:2.6.0")
+    implementation("androidx.lifecycle:lifecycle-viewmodel-ktx:2.8.4")
     // DataStore (prefs)
     implementation("androidx.datastore:datastore-preferences:1.1.1")
 
