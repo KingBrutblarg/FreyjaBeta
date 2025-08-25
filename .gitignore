@@ -47,3 +47,7 @@ app/src/main/java/com/angeluz/freyja/MainActivity.kt.bak
 # Local downloads
 clt.zip
 *.zip
+
+apks/
+
+apks/
