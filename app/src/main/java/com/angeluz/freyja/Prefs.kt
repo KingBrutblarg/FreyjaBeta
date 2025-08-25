@@ -8,7 +8,7 @@ import kotlinx.coroutines.flow.StateFlow
 
 object Prefs {
     // Modo de habla
-    private val _speakModeFlow = MutableStateFlow(SpeakMode.OFF)
+    private val _speakModeFlow = MutableStateFlow(SpeakMode.SILENT)
     val speakModeFlow: StateFlow<SpeakMode> = _speakModeFlow
     fun setSpeakMode(mode: SpeakMode) { _speakModeFlow.value = mode }
 
