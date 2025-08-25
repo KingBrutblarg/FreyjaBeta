@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- Tema real de la app -->
-    <style name="Theme.Freyja" parent="Theme.Material3.DayNight">
+    <!-- Tema real de la app (parent seguro existente en todas las builds) -->
+    <style name="Theme.Freyja" parent="Theme.MaterialComponents.DayNight.NoActionBar">
         <item name="android:windowActionBar">false</item>
         <item name="android:windowNoTitle">true</item>
         <item name="android:statusBarColor">@android:color/transparent</item>
