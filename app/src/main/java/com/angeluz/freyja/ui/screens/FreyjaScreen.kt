@@ -53,7 +53,7 @@ private fun MistLayer(infinite: InfiniteTransition, baseAlpha: Float, blurDp: Fl
     )
 }
 
-@Composable fun FreyjaScreen(vm: ChatViewModel)) {
+@Composable fun FreyjaScreen(vm: com.angeluz.freyja.ChatViewModel)) {
     val ctx = LocalContext.current
     val reply by vm.reply.collectAsState(initial = "")
 

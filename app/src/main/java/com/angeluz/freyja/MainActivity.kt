@@ -1,4 +1,5 @@
 package com.angeluz.freyja
+import com.angeluz.freyja.ChatViewModel
 
 import android.os.Bundle
 import androidx.activity.ComponentActivity
