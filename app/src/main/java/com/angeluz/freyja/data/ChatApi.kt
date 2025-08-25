@@ -1,21 +1,14 @@
 package com.angeluz.freyja.data
 
-import retrofit2.Retrofit
-import retrofit2.converter.moshi.MoshiConverterFactory
 import retrofit2.http.Body
 import retrofit2.http.POST
 
+// 🔸 Modelos sencillos
+data class ChatRequest(val message: String)
+data class ChatResponse(val reply: String)
+
+// 🔸 Endpoint (ajusta la ruta si tu backend usa otra)
 interface ChatApi {
     @POST("chat")
-    suspend fun chat(@Body req: ChatRequest): ChatReply
-}
-
-object RetrofitProvider {
-    val api: ChatApi by lazy {
-        Retrofit.Builder()
-            .baseUrl(BuildConfig.API_BASE_URL) // termina en "/"
-            .addConverterFactory(MoshiConverterFactory.create())
-            .build()
-            .create(ChatApi::class.java)
-    }
+    suspend fun send(@Body body: ChatRequest): ChatResponse
 }
