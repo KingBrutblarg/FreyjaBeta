@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <!-- Tema de la app: hereda de Material3 DayNight y apaga la ActionBar -->
+    <style name="Theme.Freyja" parent="Theme.Material3.DayNight">
+        <!-- Emula NoActionBar -->
+        <item name="android:windowActionBar">false</item>
+        <item name="android:windowNoTitle">true</item>
+
+        <!-- Opcional: status bar transparente para Compose -->
+        <item name="android:statusBarColor">@android:color/transparent</item>
+    </style>
+
+</resources>
