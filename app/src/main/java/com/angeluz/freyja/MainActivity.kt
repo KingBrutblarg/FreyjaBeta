@@ -15,6 +15,7 @@ class MainActivity : ComponentActivity() {
         setContent {
             MaterialTheme {
                 FreyjaScreen(vm = ChatViewModel())
+                        com.angeluz.freyja.ui.screens.ImageGenScreen()
             }
         }
     }
