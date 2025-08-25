@@ -7,10 +7,10 @@ import kotlinx.coroutines.runBlocking
 
 object Awareness {
     fun isUnlockedBlocking(context: Context): Boolean = runBlocking {
-        Prefs.run { Prefs.Prefs.isUnlockedFlow.first() }
+        com.angeluz.freyja.Prefs.run { com.angeluz.freyja.Prefs.com.angeluz.freyja.Prefs.isUnlockedFlow.first() }
     }
 
     fun currentSpeakModeBlocking(context: Context): SpeakMode = runBlocking {
-        Prefs.run { Prefs.Prefs.speakModeFlow.first() }
+        com.angeluz.freyja.Prefs.run { com.angeluz.freyja.Prefs.com.angeluz.freyja.Prefs.speakModeFlow.first() }
     }
 }
