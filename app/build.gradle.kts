@@ -1,10 +1,7 @@
+cat > app/build.gradle.kts <<'KTS'
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
-}
-
-kotlin {
-    jvmToolchain(17)
 }
 
 android {
@@ -19,8 +16,10 @@ android {
         versionName = "1.0"
     }
 
+    // Keystore restaurado por el workflow desde secrets
     signingConfigs {
         create("release") {
+            // el keystore vive en la raíz del repo
             storeFile = rootProject.file("freyja-release.keystore")
             storePassword = System.getenv("ANDROID_KEYSTORE_PASSWORD")
             keyAlias = System.getenv("ANDROID_KEY_ALIAS")
@@ -48,6 +47,7 @@ android {
         compose = true
         viewBinding = true
         buildConfig = true
+        // dataBinding = false
     }
 
     composeOptions {
@@ -77,6 +77,7 @@ android {
         }
     }
 
+    // APKs por ABI (opcional)
     splits {
         abi {
             isEnable = true
@@ -84,6 +85,11 @@ android {
             include("armeabi-v7a", "arm64-v8a", "x86_64")
             isUniversalApk = false
         }
+    }
+
+    testOptions {
+        animationsDisabled = true
+        unitTests.isIncludeAndroidResources = true
     }
 }
 
@@ -104,6 +110,8 @@ dependencies {
     // Lifecycle / ViewModel
     implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.8.4")
     implementation("androidx.lifecycle:lifecycle-viewmodel-ktx:2.8.4")
+
+    // Compose + Lifecycle/ViewModel
     implementation("androidx.lifecycle:lifecycle-runtime-compose:2.8.4")
     implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.8.4")
 
@@ -122,3 +130,4 @@ dependencies {
     // Coroutines
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.8.1")
 }
+KTS
