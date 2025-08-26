@@ -1,9 +1,9 @@
+// app/build.gradle.kts
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
 }
 
-// Kotlin toolchain (Java 17)
 kotlin {
     jvmToolchain(17)
 }
@@ -19,23 +19,19 @@ android {
         versionCode = 1
         versionName = "1.0.0"
 
-        // 👇 Base URL configurable (DEBE terminar en "/")
+        // Config de backend (ajústalo)
         buildConfigField("String", "API_BASE_URL", "\"https://tu-backend.tld/\"")
-
-        // Si la usas en ImageApi / backend
         buildConfigField("String", "IMG_API_KEY", "\"1226\"")
 
-        // Opcional si usas vectores en <21
         vectorDrawables.useSupportLibrary = true
     }
 
-    // Tipos de build
     buildTypes {
-        getByName("debug") {
+        debug {
             isMinifyEnabled = false
             isShrinkResources = false
         }
-        getByName("release") {
+        release {
             isMinifyEnabled = true
             isShrinkResources = true
             proguardFiles(
@@ -45,20 +41,17 @@ android {
         }
     }
 
-    // Habilita Compose / ViewBinding / BuildConfig
     buildFeatures {
         compose = true
         viewBinding = true
         buildConfig = true
-        // dataBinding = false // (por claridad: no lo usamos)
+        // dataBinding = false
     }
 
-    // Versión del compilador de Compose (alineada con el BOM 2024.10.x)
     composeOptions {
         kotlinCompilerExtensionVersion = "1.5.15"
     }
 
-    // Kotlin/JVM
     kotlinOptions {
         jvmTarget = "17"
         freeCompilerArgs += listOf(
@@ -67,13 +60,11 @@ android {
         )
     }
 
-    // Java (Javac) a 17
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
     }
 
-    // ABI splits: genera APK por arquitectura (ligero)
     splits {
         abi {
             isEnable = true
@@ -83,7 +74,6 @@ android {
         }
     }
 
-    // Empaquetado (evita conflictos de metadatos)
     packaging {
         resources {
             excludes += setOf(
@@ -94,7 +84,6 @@ android {
         }
     }
 
-    // Opcional: tests
     testOptions {
         animationsDisabled = true
         unitTests.isIncludeAndroidResources = true
@@ -102,43 +91,30 @@ android {
 }
 
 dependencies {
+    // Core
     implementation("androidx.core:core-ktx:1.13.1")
-    implementation("androidx.appcompat:appcompat:1.7.0")
-    implementation("com.google.android.material:material:1.12.0")
+
+    // Compose núcleo
+    implementation("androidx.activity:activity-compose:1.9.2")
+    implementation("androidx.compose.ui:ui:1.7.0")
+    implementation("androidx.compose.ui:ui-tooling-preview:1.7.0")
+    debugImplementation("androidx.compose.ui:ui-tooling:1.7.0")
+    implementation("androidx.compose.ui:ui-graphics:1.7.0")
+    implementation("androidx.compose.material3:material3:1.3.0")
 
     // Lifecycle / ViewModel
     implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.8.4")
     implementation("androidx.lifecycle:lifecycle-viewmodel-ktx:2.8.4")
-
-    // Compose + ViewModel
     implementation("androidx.lifecycle:lifecycle-runtime-compose:2.8.4")
     implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.8.4")
 
-    // Compose core (asegúrate de tener estos también)
-    implementation("androidx.compose.ui:ui:1.7.0")
-    implementation("androidx.compose.material3:material3:1.3.0")
-    implementation("androidx.activity:activity-compose:1.9.1")
-}
-    // Compose núcleo
-    implementation("androidx.activity:activity-compose:1.9.2")
-    implementation("androidx.compose.ui:ui")
-    implementation("androidx.compose.ui:ui-tooling-preview")
-    debugImplementation("androidx.compose.ui:ui-tooling")
-    implementation("androidx.compose.material3:material3")
-    implementation("androidx.compose.ui:ui-graphics") // <- para asImageBitmap()
-
-    // Core & Lifecycle
-    implementation("androidx.core:core-ktx:1.13.1")
-    implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.8.4")
-    implementation("androidx.lifecycle:lifecycle-viewmodel-ktx:2.8.4")
-
-    // DataStore (prefs) ligero
+    // DataStore (prefs)
     implementation("androidx.datastore:datastore-preferences:1.1.1")
 
     // Imágenes
     implementation("io.coil-kt:coil-compose:2.6.0")
 
-    // Networking (Retrofit + Moshi + OkHttp)
+    // Networking
     implementation("com.squareup.okhttp3:okhttp:4.12.0")
     implementation("com.squareup.retrofit2:retrofit:2.11.0")
     implementation("com.squareup.retrofit2:converter-moshi:2.11.0")
@@ -146,8 +122,4 @@ dependencies {
 
     // Coroutines
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.8.1")
-
-    // (Opcional) Si NO usas vistas clásicas, puedes evitar appcompat/material:
-    // implementation("androidx.appcompat:appcompat:1.7.0")
-    // implementation("com.google.android.material:material:1.12.0")
 }
