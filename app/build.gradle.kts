@@ -1,4 +1,6 @@
-// app/build.gradle.kts
+cd ~/FreyjaBeta
+
+cat > app/build.gradle.kts <<'KTS'
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
@@ -19,7 +21,7 @@ android {
         versionCode = 1
         versionName = "1.0.0"
 
-        // Config de backend (ajústalo)
+        // Ajusta a tu backend (debe terminar en "/")
         buildConfigField("String", "API_BASE_URL", "\"https://tu-backend.tld/\"")
         buildConfigField("String", "IMG_API_KEY", "\"1226\"")
 
@@ -45,7 +47,6 @@ android {
         compose = true
         viewBinding = true
         buildConfig = true
-        // dataBinding = false
     }
 
     composeOptions {
@@ -108,7 +109,7 @@ dependencies {
     implementation("androidx.lifecycle:lifecycle-runtime-compose:2.8.4")
     implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.8.4")
 
-    // DataStore (prefs)
+    // DataStore
     implementation("androidx.datastore:datastore-preferences:1.1.1")
 
     // Imágenes
@@ -123,3 +124,4 @@ dependencies {
     // Coroutines
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.8.1")
 }
+KTS
