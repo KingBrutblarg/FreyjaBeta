@@ -1,13 +1,15 @@
 package com.angeluz.freyja.data
 
-import retrofit2.http.Body
-import retrofit2.http.POST
-
-// Modelos simples (ajusta a tu backend si es necesario)
-data class ChatRequest(val message: String)
-data class ChatResponse(val reply: String)
+import retrofit2.http.GET
+import retrofit2.http.Query
 
 interface ChatApi {
-    @POST("chat")
-    suspend fun send(@Body body: ChatRequest): ChatResponse
+    @GET("echo")
+    suspend fun echo(@Query("q") q: String): String
+
+    companion object {
+        val instance: ChatApi by lazy {
+            RetrofitProvider.retrofit.create(ChatApi::class.java)
+        }
+    }
 }
