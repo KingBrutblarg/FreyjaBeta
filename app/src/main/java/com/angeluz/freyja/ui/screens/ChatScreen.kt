@@ -9,36 +9,31 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.angeluz.freyja.ChatViewModel
-import androidx.compose.foundation.layout.Arrangement
+import com.angeluz.freyja.model.ChatMessage
 
 @Composable
 fun ChatScreen(vm: ChatViewModel = viewModel()) {
-    // Cadena simple guardada en recomposiciones / rotaciones
-    var input by rememberSaveable { mutableStateOf("") }
-
-    // Observa los mensajes de la VM de forma lifecycle-aware
-    val messages by vm.messages.collectAsStateWithLifecycle(emptyList())
+    var input by remember { mutableStateOf(TextFieldValue("")) }
+    val messages: List<ChatMessage> = vm.messages
 
     Surface(modifier = Modifier.fillMaxSize()) {
         Column(modifier = Modifier
             .fillMaxSize()
-            .padding(16.dp)
-        ) {
+            .padding(16.dp)) {
 
             LazyColumn(
                 modifier = Modifier
                     .weight(1f)
                     .fillMaxWidth(),
-                reverseLayout = true // muestra lo más nuevo abajo
+                reverseLayout = true
             ) {
-                items(messages) { msg ->
+                items(messages.asReversed()) { msg ->
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -46,10 +41,8 @@ fun ChatScreen(vm: ChatViewModel = viewModel()) {
                         horizontalArrangement = if (msg.mine) Arrangement.End else Arrangement.Start
                     ) {
                         Surface(
-                            color = if (msg.mine)
-                                MaterialTheme.colorScheme.primaryContainer
-                            else
-                                MaterialTheme.colorScheme.secondaryContainer,
+                            color = if (msg.mine) MaterialTheme.colorScheme.primaryContainer
+                            else MaterialTheme.colorScheme.secondaryContainer,
                             shape = MaterialTheme.shapes.medium
                         ) {
                             Text(
@@ -70,19 +63,16 @@ fun ChatScreen(vm: ChatViewModel = viewModel()) {
                     value = input,
                     onValueChange = { input = it },
                     modifier = Modifier.weight(1f),
-                    placeholder = { Text("Escribe…") },
-                    singleLine = true
+                    placeholder = { Text("Escribe…") }
                 )
                 Spacer(Modifier.width(8.dp))
-                Button(
-                    onClick = {
-                        val msg = input.trim()
-                        if (msg.isNotEmpty()) {
-                            vm.send(msg)
-                            input = ""
-                        }
+                Button(onClick = {
+                    val msg = input.text.trim()
+                    if (msg.isNotEmpty()) {
+                        vm.send(msg)
+                        input = TextFieldValue("")
                     }
-                ) {
+                }) {
                     Text("Enviar")
                 }
             }
