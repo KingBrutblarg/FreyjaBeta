@@ -8,11 +8,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.TextFieldValue
@@ -24,6 +20,7 @@ import com.angeluz.freyja.model.ChatMessage
 @Composable
 fun ChatScreen(vm: ChatViewModel = viewModel()) {
     var input by remember { mutableStateOf(TextFieldValue("")) }
+    val messages: List<ChatMessage> = vm.messages
 
     Surface(modifier = Modifier.fillMaxSize()) {
         Column(
@@ -31,6 +28,7 @@ fun ChatScreen(vm: ChatViewModel = viewModel()) {
                 .fillMaxSize()
                 .padding(16.dp)
         ) {
+
             LazyColumn(
                 modifier = Modifier
                     .weight(1f)
@@ -38,9 +36,9 @@ fun ChatScreen(vm: ChatViewModel = viewModel()) {
                 reverseLayout = true
             ) {
                 items(
-                    items = vm.messages.asReversed(),
+                    items = messages.asReversed(),
                     key = { it.id }
-                ) { msg: ChatMessage ->
+                ) { msg ->
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -48,18 +46,10 @@ fun ChatScreen(vm: ChatViewModel = viewModel()) {
                         horizontalArrangement = if (msg.mine) Arrangement.End else Arrangement.Start
                     ) {
                         Surface(
-<<<<<<< HEAD
                             color = if (msg.mine)
                                 MaterialTheme.colorScheme.primaryContainer
                             else
                                 MaterialTheme.colorScheme.secondaryContainer,
-=======
-                            color = if (msg.mine) {
-                                MaterialTheme.colorScheme.primaryContainer
-                            } else {
-                                MaterialTheme.colorScheme.secondaryContainer
-                            },
->>>>>>> 10f3e47 (fix(chat): remover ChatRequest/api, imports de ChatMessage y key correcto en LazyColumn)
                             shape = MaterialTheme.shapes.medium
                         ) {
                             Text(
