@@ -1,84 +1,21 @@
-package com.angeluz.freyja.ui.screens
+package com.angeluz.freyja
 
-import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
-import androidx.compose.material3.Button
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
-import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.input.TextFieldValue
-import androidx.compose.ui.unit.dp
-import androidx.lifecycle.viewmodel.compose.viewModel
-import com.angeluz.freyja.ChatViewModel
+import androidx.compose.runtime.mutableStateListOf
+import androidx.lifecycle.ViewModel
 import com.angeluz.freyja.model.ChatMessage
+import java.util.concurrent.atomic.AtomicLong
 
-@Composable
-fun ChatScreen(vm: ChatViewModel = viewModel()) {
-    var input by remember { mutableStateOf(TextFieldValue("")) }
+class ChatViewModel : ViewModel() {
 
-    Surface(modifier = Modifier.fillMaxSize()) {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(16.dp)
-        ) {
-            LazyColumn(
-                modifier = Modifier
-                    .weight(1f)
-                    .fillMaxWidth(),
-                reverseLayout = true
-            ) {
-                items(
-                    items = vm.messages.asReversed(),
-                    key = { it.id }
-                ) { msg: ChatMessage ->
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = 6.dp),
-                        horizontalArrangement = if (msg.mine) Arrangement.End else Arrangement.Start
-                    ) {
-                        Surface(
-                            color = if (msg.mine) MaterialTheme.colorScheme.primaryContainer
-                            else MaterialTheme.colorScheme.secondaryContainer,
-                            shape = MaterialTheme.shapes.medium
-                        ) {
-                            Text(
-                                text = msg.text,
-                                modifier = Modifier.padding(10.dp),
-                                style = MaterialTheme.typography.bodyMedium
-                            )
-                        }
-                    }
-                }
-            }
+    private val _messages = mutableStateListOf<ChatMessage>()
+    val messages: List<ChatMessage> get() = _messages
 
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                OutlinedTextField(
-                    value = input,
-                    onValueChange = { input = it },
-                    modifier = Modifier.weight(1f),
-                    placeholder = { Text("Escribe…") }
-                )
-                Spacer(Modifier.width(8.dp))
-                Button(onClick = {
-                    val msg = input.text.trim()
-                    if (msg.isNotEmpty()) {
-                        vm.send(msg)
-                        input = TextFieldValue("")
-                    }
-                }) {
-                    Text("Enviar")
-                }
-            }
-        }
+    private val nextId = AtomicLong(1)
+
+    fun send(text: String) {
+        // tu mensaje
+        _messages.add(ChatMessage(nextId.getAndIncrement(), text, true))
+        // respuesta dummy (quítala si no la quieres)
+        _messages.add(ChatMessage(nextId.getAndIncrement(), "Echo: $text", false))
     }
 }
