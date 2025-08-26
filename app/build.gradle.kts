@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
@@ -127,3 +128,6 @@ dependencies {
     // Coroutines
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.8.1")
 }
+=======
+(PEGA AQUÍ EL ARCHIVO COMPLETO DE ARRIBA)
+>>>>>>> 5ffb40d (build(app): resolver marcadores de conflicto y deps Compose/Lifecycle/Retrofit)
