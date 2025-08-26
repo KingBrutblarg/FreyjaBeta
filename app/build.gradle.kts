@@ -3,26 +3,21 @@ plugins {
     id("org.jetbrains.kotlin.android")
 }
 
-kotlin {
-    jvmToolchain(17)
-}
+kotlin { jvmToolchain(17) }
 
 android {
-    namespace = "com.angeluz.freyja"
-    compileSdk = 34
+    // namespace = "com.angeluz.freyja"
+    // compileSdk = 34
+    // defaultConfig { ... }
 
-    defaultConfig {
-        applicationId = "com.angeluz.freyja"
-        minSdk = 24
-        targetSdk = 34
-        versionCode = 1
-        versionName = "1.0.0"
-
-        // Debe terminar en "/"
-        buildConfigField("String", "API_BASE_URL", "\"https://tu-backend.tld/\"")
-        buildConfigField("String", "IMG_API_KEY", "\"1226\"")
-
-        vectorDrawables.useSupportLibrary = true
+    signingConfigs {
+        create("release") {
+            // El workflow deja este archivo en la raíz del repo
+            storeFile = rootProject.file("freyja-release.keystore")
+            storePassword = System.getenv("ANDROID_KEYSTORE_PASSWORD")
+            keyAlias = System.getenv("ANDROID_KEY_ALIAS")
+            keyPassword = System.getenv("ANDROID_KEY_PASSWORD")
+        }
     }
 
     buildTypes {
@@ -31,6 +26,7 @@ android {
             isShrinkResources = false
         }
         release {
+            signingConfig = signingConfigs.getByName("release")
             isMinifyEnabled = true
             isShrinkResources = true
             proguardFiles(
@@ -44,7 +40,6 @@ android {
         compose = true
         viewBinding = true
         buildConfig = true
-        // dataBinding = false
     }
 
     composeOptions {
@@ -91,7 +86,6 @@ android {
 }
 
 dependencies {
-    // Core / AppCompat
     implementation("androidx.core:core-ktx:1.13.1")
     implementation("androidx.appcompat:appcompat:1.7.0")
     implementation("com.google.android.material:material:1.12.0")
@@ -107,23 +101,17 @@ dependencies {
     // Lifecycle / ViewModel
     implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.8.4")
     implementation("androidx.lifecycle:lifecycle-viewmodel-ktx:2.8.4")
-
-    // Compose + Lifecycle/ViewModel
     implementation("androidx.lifecycle:lifecycle-runtime-compose:2.8.4")
     implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.8.4")
 
-    // DataStore
     implementation("androidx.datastore:datastore-preferences:1.1.1")
 
-    // Imágenes
     implementation("io.coil-kt:coil-compose:2.6.0")
 
-    // Networking
     implementation("com.squareup.okhttp3:okhttp:4.12.0")
     implementation("com.squareup.retrofit2:retrofit:2.11.0")
     implementation("com.squareup.retrofit2:converter-moshi:2.11.0")
     implementation("com.squareup.moshi:moshi-kotlin:1.15.1")
 
-    // Coroutines
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.8.1")
 }
