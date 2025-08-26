@@ -23,9 +23,8 @@ fun ChatScreen(vm: ChatViewModel = viewModel()) {
     val messages: List<ChatMessage> = vm.messages
 
     Surface(modifier = Modifier.fillMaxSize()) {
-        Column(
-            modifier = Modifier.fillMaxSize().padding(16.dp)
-        ) {
+        Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
+
             LazyColumn(
                 modifier = Modifier.weight(1f).fillMaxWidth(),
                 reverseLayout = true
