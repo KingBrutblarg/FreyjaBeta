@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 cd ~/FreyjaBeta
 
 cat > app/build.gradle.kts <<'KTS'
@@ -125,3 +126,6 @@ dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.8.1")
 }
 KTS
+=======
+// (pega aquí TODO el contenido completo que te pasé)
+>>>>>>> 041ddd2 (build: corregir llaves y deps en dependencies{} (Compose/Lifecycle/Retrofit))
