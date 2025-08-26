@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
@@ -92,12 +91,12 @@ android {
 }
 
 dependencies {
-    // Core / AppCompat (si usas vistas clásicas)
+    // Core / AppCompat
     implementation("androidx.core:core-ktx:1.13.1")
     implementation("androidx.appcompat:appcompat:1.7.0")
     implementation("com.google.android.material:material:1.12.0")
 
-    // Compose núcleo
+    // Compose
     implementation("androidx.activity:activity-compose:1.9.2")
     implementation("androidx.compose.ui:ui:1.7.0")
     implementation("androidx.compose.ui:ui-graphics:1.7.0")
@@ -128,6 +127,3 @@ dependencies {
     // Coroutines
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.8.1")
 }
-=======
-(PEGA AQUÍ EL ARCHIVO COMPLETO DE ARRIBA)
->>>>>>> 5ffb40d (build(app): resolver marcadores de conflicto y deps Compose/Lifecycle/Retrofit)
