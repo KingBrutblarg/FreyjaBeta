@@ -24,15 +24,10 @@ fun ChatScreen(vm: ChatViewModel = viewModel()) {
 
     Surface(modifier = Modifier.fillMaxSize()) {
         Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(16.dp)
+            modifier = Modifier.fillMaxSize().padding(16.dp)
         ) {
-
             LazyColumn(
-                modifier = Modifier
-                    .weight(1f)
-                    .fillMaxWidth(),
+                modifier = Modifier.weight(1f).fillMaxWidth(),
                 reverseLayout = true
             ) {
                 items(
@@ -40,9 +35,7 @@ fun ChatScreen(vm: ChatViewModel = viewModel()) {
                     key = { it.id }
                 ) { msg ->
                     Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = 6.dp),
+                        modifier = Modifier.fillMaxWidth().padding(vertical = 6.dp),
                         horizontalArrangement = if (msg.mine) Arrangement.End else Arrangement.Start
                     ) {
                         Surface(
