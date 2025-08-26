@@ -1,53 +1,10 @@
-name: Android CI
+- name: Decode Keystore
+  run: echo "$ANDROID_KEYSTORE_BASE64" | base64 -d > freyja-release.keystore
 
-on:
-  push:
-    branches: [ "main" ]
-  workflow_dispatch:
+- name: Build Signed APK
+  run: ./gradlew assembleRelease
 
-jobs:
-  build:
-    runs-on: ubuntu-22.04
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Set up Java
-        uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: "17"
-
-      # Solo instala cmdline-tools
-      - name: Set up Android cmdline-tools
-        uses: android-actions/setup-android@v3
-        with:
-          cmdline-tools-version: 11076708
-
-      # Acepta TODAS las licencias de forma no interactiva
-      - name: Accept Android SDK licenses
-        run: |
-          yes | "${ANDROID_SDK_ROOT}/cmdline-tools/12.0/bin/sdkmanager" --licenses || true
-          yes | "${ANDROID_SDK_ROOT}/cmdline-tools/latest/bin/sdkmanager" --licenses || true
-
-      # Instala los paquetes necesarios del SDK
-      - name: Install required SDK packages
-        run: |
-          "${ANDROID_SDK_ROOT}/cmdline-tools/12.0/bin/sdkmanager" \
-            "platform-tools" \
-            "build-tools;34.0.0" \
-            "platforms;android-34"
-
-      - name: Create local.properties
-        run: echo "sdk.dir=$ANDROID_SDK_ROOT" > local.properties
-
-      - name: Make gradlew executable
-        run: chmod +x gradlew
-
-      - name: Assemble Release
-        run: ./gradlew --no-daemon assembleRelease
-
-      - name: Upload APK
-        uses: actions/upload-artifact@v4
-        with:
-          name: app-release
-          path: app/build/outputs/apk/release/*.apk
+env:
+  ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+  ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+  ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
