@@ -8,7 +8,11 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.TextFieldValue
@@ -44,10 +48,18 @@ fun ChatScreen(vm: ChatViewModel = viewModel()) {
                         horizontalArrangement = if (msg.mine) Arrangement.End else Arrangement.Start
                     ) {
                         Surface(
+<<<<<<< HEAD
                             color = if (msg.mine)
                                 MaterialTheme.colorScheme.primaryContainer
                             else
                                 MaterialTheme.colorScheme.secondaryContainer,
+=======
+                            color = if (msg.mine) {
+                                MaterialTheme.colorScheme.primaryContainer
+                            } else {
+                                MaterialTheme.colorScheme.secondaryContainer
+                            },
+>>>>>>> 10f3e47 (fix(chat): remover ChatRequest/api, imports de ChatMessage y key correcto en LazyColumn)
                             shape = MaterialTheme.shapes.medium
                         ) {
                             Text(
