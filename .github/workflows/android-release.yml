@@ -1,107 +1,55 @@
-name: Android Release Build
+name: Android Release
 
 on:
   workflow_dispatch:
   push:
-    tags:
-      - "v*"
+    branches: [ main ]
 
 jobs:
   build:
-    runs-on: ubuntu-22.04
-    steps:
-      - uses: actions/checkout@v4
+    runs-on: ubuntu-latest
 
-      - name: Set up Java 17
+    env:
+      ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+      ANDROID_KEY_ALIAS:         ${{ secrets.ANDROID_KEY_ALIAS }}
+      ANDROID_KEY_PASSWORD:      ${{ secrets.ANDROID_KEY_PASSWORD }}
+      ANDROID_KEYSTORE_BASE64:   ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK
         uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: "17"
+          java-version: 17
           cache: gradle
 
       - name: Set up Android SDK
         uses: android-actions/setup-android@v3
-        with:
-          api-level: 34
-          build-tools: "34.0.0"
 
-      - name: Make gradlew executable
-        run: chmod +x gradlew
-
-      - name: Build Release APKs (unsigned, con splits por ABI)
-        run: ./gradlew assembleRelease
+      # Opcional: instala toolchains base; Gradle descargará lo que falte.
+      - name: Install base SDK packages
+        run: |
+          sdkmanager "platform-tools" "build-tools;34.0.0" "platforms;android-34"
 
       - name: Decode keystore
-        run: echo "$ANDROID_KEYSTORE_BASE64" | base64 -d > freyja.jks
-        env:
-          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+        run: echo "$ANDROID_KEYSTORE_BASE64" | base64 -d > freyja-release.keystore
 
-      - name: Sign split APKs
+      - name: Create local.properties
         run: |
-          mkdir -p dist
-          shopt -s nullglob
-          for f in app/build/outputs/apk/release/*-release-unsigned.apk; do
-            echo "Firmando: $f"
-            jarsigner -verbose -sigalg SHA256withRSA -digestalg SHA-256 \
-              -keystore freyja.jks \
-              -storepass "${{ secrets.ANDROID_KEYSTORE_PASSWORD }}" \
-              -keypass "${{ secrets.ANDROID_KEY_PASSWORD }}" \
-              "$f" "${{ secrets.ANDROID_KEY_ALIAS }}"
-            signed="${f/-unsigned/}"   # quita sufijo -unsigned
-            mv "$f" "$signed"
+          echo "sdk.dir=$ANDROID_SDK_ROOT" > local.properties
 
-            base="$(basename "$signed")"
-            if [[ "$base" == *"arm64-v8a"* ]]; then
-              cp "$signed" dist/freyja-arm64-v8a.apk
-            elif [[ "$base" == *"armeabi-v7a"* ]]; then
-              cp "$signed" dist/freyja-armeabi-v7a.apk
-            elif [[ "$base" == *"x86_64"* ]]; then
-              cp "$signed" dist/freyja-x86_64.apk
-            else
-              cp "$signed" "dist/$base"
-            fi
-          done
-          ls -lh dist
+      - name: Make Gradle wrapper executable
+        run: chmod +x ./gradlew
 
-      - name: Verify signatures
-        run: |
-          for a in dist/*.apk; do
-            echo "Verificando: $a"
-            jarsigner -verify "$a"
-          done
+      - name: Assemble Release (signed)
+        run: ./gradlew --no-daemon assembleRelease
 
-      - name: Upload Signed APKs (artifacts)
+      - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: freyja-release-splits
-          path: dist/*.apk
-          retention-days: 7
-
-  github_release:
-    needs: build
-    runs-on: ubuntu-22.04
-    permissions:
-      contents: write
-    steps:
-      - name: Download signed APK artifacts
-        uses: actions/download-artifact@v4
-        with:
-          name: freyja-release-splits
-          path: dist
-
-      - name: Create GitHub Release (attach all APKs)
-        uses: softprops/action-gh-release@v2
-        with:
-          files: dist/*.apk
-          name: "🌌 Freyja ${{ github.ref_name }} — Guardia Activa"
-          body: |
-            ⚔️ **Invocación completada**
-            Versión `${{ github.ref_name }}` con APKs por arquitectura:
-
-            - **arm64-v8a** → `freyja-arm64-v8a.apk`
-            - **armeabi-v7a** → `freyja-armeabi-v7a.apk`
-            - **x86_64** → `freyja-x86_64.apk`
-
-            Incluye optimizaciones de compilación (Java/Kotlin 17), splits por ABI y firma automática.
-        env:
-          GITHUB_TOKEN: ${{ secrets.RELEASE_TOKEN }}
+          name: app-release
+          path: app/build/outputs/apk/release/*.apk
+          if-no-files-found: error
