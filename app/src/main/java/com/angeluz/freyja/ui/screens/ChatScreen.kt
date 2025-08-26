@@ -20,20 +20,23 @@ import com.angeluz.freyja.model.ChatMessage
 @Composable
 fun ChatScreen(vm: ChatViewModel = viewModel()) {
     var input by remember { mutableStateOf(TextFieldValue("")) }
-    val messages: List<ChatMessage> = vm.messages
 
     Surface(modifier = Modifier.fillMaxSize()) {
-        Column(modifier = Modifier
-            .fillMaxSize()
-            .padding(16.dp)) {
-
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(16.dp)
+        ) {
             LazyColumn(
                 modifier = Modifier
                     .weight(1f)
                     .fillMaxWidth(),
                 reverseLayout = true
             ) {
-                items(messages.asReversed()) { msg ->
+                items(
+                    items = vm.messages.asReversed(),
+                    key = { it.id }
+                ) { msg: ChatMessage ->
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
