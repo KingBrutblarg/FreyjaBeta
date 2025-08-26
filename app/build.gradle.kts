@@ -1,7 +1,3 @@
-<<<<<<< HEAD
-cd ~/FreyjaBeta
-
-cat > app/build.gradle.kts <<'KTS'
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
@@ -22,7 +18,7 @@ android {
         versionCode = 1
         versionName = "1.0.0"
 
-        // Ajusta a tu backend (debe terminar en "/")
+        // Debe terminar en "/"
         buildConfigField("String", "API_BASE_URL", "\"https://tu-backend.tld/\"")
         buildConfigField("String", "IMG_API_KEY", "\"1226\"")
 
@@ -48,6 +44,7 @@ android {
         compose = true
         viewBinding = true
         buildConfig = true
+        // dataBinding = false
     }
 
     composeOptions {
@@ -67,15 +64,6 @@ android {
         targetCompatibility = JavaVersion.VERSION_17
     }
 
-    splits {
-        abi {
-            isEnable = true
-            reset()
-            include("armeabi-v7a", "arm64-v8a", "x86_64")
-            isUniversalApk = false
-        }
-    }
-
     packaging {
         resources {
             excludes += setOf(
@@ -86,6 +74,16 @@ android {
         }
     }
 
+    // (Opcional) APKs por ABI
+    splits {
+        abi {
+            isEnable = true
+            reset()
+            include("armeabi-v7a", "arm64-v8a", "x86_64")
+            isUniversalApk = false
+        }
+    }
+
     testOptions {
         animationsDisabled = true
         unitTests.isIncludeAndroidResources = true
@@ -93,20 +91,24 @@ android {
 }
 
 dependencies {
-    // Core
+    // Core / AppCompat (si usas vistas clásicas)
     implementation("androidx.core:core-ktx:1.13.1")
+    implementation("androidx.appcompat:appcompat:1.7.0")
+    implementation("com.google.android.material:material:1.12.0")
 
     // Compose núcleo
     implementation("androidx.activity:activity-compose:1.9.2")
     implementation("androidx.compose.ui:ui:1.7.0")
-    implementation("androidx.compose.ui:ui-tooling-preview:1.7.0")
-    debugImplementation("androidx.compose.ui:ui-tooling:1.7.0")
     implementation("androidx.compose.ui:ui-graphics:1.7.0")
+    implementation("androidx.compose.ui:ui-tooling-preview:1.7.0")
     implementation("androidx.compose.material3:material3:1.3.0")
+    debugImplementation("androidx.compose.ui:ui-tooling:1.7.0")
 
     // Lifecycle / ViewModel
     implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.8.4")
     implementation("androidx.lifecycle:lifecycle-viewmodel-ktx:2.8.4")
+
+    // Compose + Lifecycle/ViewModel
     implementation("androidx.lifecycle:lifecycle-runtime-compose:2.8.4")
     implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.8.4")
 
@@ -125,7 +127,3 @@ dependencies {
     // Coroutines
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.8.1")
 }
-KTS
-=======
-// (pega aquí TODO el contenido completo que te pasé)
->>>>>>> 041ddd2 (build: corregir llaves y deps en dependencies{} (Compose/Lifecycle/Retrofit))
