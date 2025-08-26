@@ -1,54 +1,79 @@
-name: Android CI
+android {
+    namespace = "com.angeluz.freyja"
+    compileSdk = 34
 
-on:
-  push:
-  workflow_dispatch:
+    defaultConfig {
+        applicationId = "com.angeluz.freyja"
+        minSdk = 24
+        targetSdk = 34
+        versionCode = 1
+        versionName = "1.0"
+    }
 
-jobs:
-  build:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
+    signingConfigs {
+        create("release") {
+            storeFile = rootProject.file("freyja-release.keystore")
+            storePassword = System.getenv("ANDROID_KEYSTORE_PASSWORD")
+            keyAlias = System.getenv("ANDROID_KEY_ALIAS")
+            keyPassword = System.getenv("ANDROID_KEY_PASSWORD")
+        }
+    }
 
-      - name: Set up Java 17
-        uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: 17
-          cache: gradle
+    buildTypes {
+        getByName("release") {
+            signingConfig = signingConfigs.getByName("release")
+            isMinifyEnabled = true
+            isShrinkResources = true
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro"
+            )
+        }
+        getByName("debug") {
+            isMinifyEnabled = false
+            isShrinkResources = false
+        }
+    }
 
-      - name: Set up Android cmdline-tools
-        uses: android-actions/setup-android@v3
+    buildFeatures {
+        compose = true
+        viewBinding = true
+        buildConfig = true
+    }
 
-      - name: Accept Android SDK licenses
-        run: yes | sdkmanager --licenses
+    composeOptions {
+        kotlinCompilerExtensionVersion = "1.5.15"
+    }
 
-      - name: Install required SDK packages
-        run: |
-          sdkmanager "platform-tools" "build-tools;34.0.0" "platforms;android-34"
+    kotlinOptions {
+        jvmTarget = "17"
+        freeCompilerArgs += listOf(
+            "-Xjvm-default=all",
+            "-Xcontext-receivers"
+        )
+    }
 
-      # ⬇️ ESCRIBE EL KEYSTORE DESDE EL SECRET
-      - name: Restore release keystore from secret
-        run: |
-          echo -n "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 -d > freyja-release.keystore
-          ls -l freyja-release.keystore
+    compileOptions {
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
+    }
 
-      # ⬇️ Exporta los secrets como env vars para Gradle (coinciden con tu build.gradle.kts)
-      - name: Export signing env vars
-        run: |
-          echo "ANDROID_KEYSTORE_PASSWORD=${{ secrets.ANDROID_KEYSTORE_PASSWORD }}" >> $GITHUB_ENV
-          echo "ANDROID_KEY_ALIAS=${{ secrets.ANDROID_KEY_ALIAS }}" >> $GITHUB_ENV
-          echo "ANDROID_KEY_PASSWORD=${{ secrets.ANDROID_KEY_PASSWORD }}" >> $GITHUB_ENV
+    packaging {
+        resources {
+            excludes += setOf(
+                "META-INF/AL2.0",
+                "META-INF/LGPL2.1",
+                "META-INF/*kotlin_module"
+            )
+        }
+    }
 
-      - name: Make gradlew executable
-        run: chmod +x gradlew
-
-      - name: Assemble Release
-        run: ./gradlew --no-daemon assembleRelease
-
-      - name: Upload APK
-        uses: actions/upload-artifact@v4
-        with:
-          name: app-release
-          path: app/build/outputs/apk/release/*.apk
-          if-no-files-found: error
+    splits {
+        abi {
+            isEnable = true
+            reset()
+            include("armeabi-v7a", "arm64-v8a", "x86_64")
+            isUniversalApk = false
+        }
+    }
+}
