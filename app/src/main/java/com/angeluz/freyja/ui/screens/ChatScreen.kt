@@ -44,8 +44,10 @@ fun ChatScreen(vm: ChatViewModel = viewModel()) {
                         horizontalArrangement = if (msg.mine) Arrangement.End else Arrangement.Start
                     ) {
                         Surface(
-                            color = if (msg.mine) MaterialTheme.colorScheme.primaryContainer
-                            else MaterialTheme.colorScheme.secondaryContainer,
+                            color = if (msg.mine)
+                                MaterialTheme.colorScheme.primaryContainer
+                            else
+                                MaterialTheme.colorScheme.secondaryContainer,
                             shape = MaterialTheme.shapes.medium
                         ) {
                             Text(
