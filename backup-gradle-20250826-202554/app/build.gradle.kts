@@ -46,7 +46,7 @@ android {
         buildConfig = true
     }
 
-    composeOptions { kotlinCompilerExtensionVersion = "1.5.14" }
+    composeOptions { kotlinCompilerExtensionVersion = "1.5.15" }
 
     kotlinOptions {
         jvmTarget = "17"
