@@ -8,7 +8,6 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.angeluz.freyja.ApiViewModel
 
@@ -16,9 +15,8 @@ import com.angeluz.freyja.ApiViewModel
 fun PostsScreen(
     vm: ApiViewModel = viewModel()
 ) {
-    val list = remember(vm) { vm.posts } // SnapshotStateList<String>
+    val list = remember(vm) { vm.posts }
 
-    // Lanza la carga al entrar
     LaunchedEffect(Unit) { vm.fetchPosts() }
 
     Scaffold(
@@ -33,7 +31,6 @@ fun PostsScreen(
         }
     ) { padding ->
         if (list.isEmpty()) {
-            // Estado vacío / cargando
             Box(
                 modifier = Modifier
                     .fillMaxSize()
