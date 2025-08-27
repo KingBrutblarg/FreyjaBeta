@@ -17,6 +17,8 @@ android {
         // BuildConfig.API_BASE_URL desde secret (CI) o fallback local
         val apiBaseUrl = System.getenv("API_BASE_URL") ?: "https://echo.hoppscotch.io/"
         buildConfigField("String", "API_BASE_URL", "\"$apiBaseUrl\"")
+        val imgKey = System.getenv("IMG_API_KEY") ?: ""
+        buildConfigField("String", "IMG_API_KEY", "\"${imgKey}\"")
     }
 
     signingConfigs {
