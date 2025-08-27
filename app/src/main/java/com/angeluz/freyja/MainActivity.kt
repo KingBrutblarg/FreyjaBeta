@@ -6,19 +6,23 @@ import androidx.activity.compose.setContent
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import com.angeluz.freyja.ApiViewModel
+import com.angeluz.freyja.screens.PostsScreen
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
             MaterialTheme {
-                Hello()
+                Home()
             }
         }
     }
 }
 
 @Composable
-fun Hello() {
+fun Home() {
+    // Muestra mensaje y la lista de ejemplo
     Text("Hola Freyja ✨")
+    PostsScreen(vm = ApiViewModel())
 }
