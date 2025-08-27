@@ -9,8 +9,8 @@ android {
         versionCode = 1
         versionName = "1.0"
 
-        // 👇 Aquí defines la constante accesible en BuildConfig
-        val apiBaseUrl = System.getenv("API_BASE_URL") ?: "https://example.invalid/"
+        // 🔑 Toma el endpoint del secret/API_BASE_URL; si no existe, usa hoppscotch de prueba
+        val apiBaseUrl = System.getenv("API_BASE_URL") ?: "https://echo.hoppscotch.io/"
         buildConfigField("String", "API_BASE_URL", "\"$apiBaseUrl\"")
     }
 
@@ -33,6 +33,7 @@ android {
                 "proguard-rules.pro"
             )
         }
+        // (opcional) deja debug por defecto
     }
 
     buildFeatures {
@@ -42,6 +43,7 @@ android {
     }
 
     composeOptions {
+        // 👇 Empata con Kotlin 1.9.25 que ya fijamos en el root
         kotlinCompilerExtensionVersion = "1.5.15"
     }
 
