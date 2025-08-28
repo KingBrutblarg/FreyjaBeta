@@ -2,53 +2,112 @@ name: Android CI
 
 on:
   push:
+    branches: [ "main", "ci/kotlin-fixes" ]
+  pull_request:
+    branches: [ "main", "ci/kotlin-fixes" ]
   workflow_dispatch:
 
+concurrency:
+  group: android-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
-  build:
-    runs-on: ubuntu-latest
+  pr-check:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v4
-
       - name: Set up Java 17
         uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: 17
+          java-version: "17"
           cache: gradle
+      - name: Set up Android cmdline-tools
+        uses: android-actions/setup-android@v3
+      - name: Accept Android SDK licenses
+        run: yes | "${ANDROID_SDK_ROOT}/cmdline-tools/latest/bin/sdkmanager" --licenses || true
+      - name: Install required SDK packages
+        run: |
+          "${ANDROID_SDK_ROOT}/cmdline-tools/latest/bin/sdkmanager" \
+            "platform-tools" \
+            "build-tools;34.0.0" \
+            "platforms;android-34"
+      - name: Create local.properties
+        run: echo "sdk.dir=$ANDROID_SDK_ROOT" > local.properties
+      - name: Make gradlew executable
+        run: chmod +x gradlew
+      - name: Assemble Debug (PR)
+        run: ./gradlew --no-daemon assembleDebug
+      - name: Upload Debug APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-debug
+          path: app/build/outputs/apk/debug/*.apk
+
+  release:
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+          cache: gradle
+
+      # Secrets -> variables de entorno para build.gradle.kts (System.getenv)
+      - name: Export signing & app env vars
+        run: |
+          {
+            echo "ANDROID_KEYSTORE_PASSWORD=${{ secrets.ANDROID_KEYSTORE_PASSWORD }}"
+            echo "ANDROID_KEY_ALIAS=${{ secrets.ANDROID_KEY_ALIAS }}"
+            echo "ANDROID_KEY_PASSWORD=${{ secrets.ANDROID_KEY_PASSWORD }}"
+            echo "API_BASE_URL=${{ secrets.API_BASE_URL }}"
+            echo "IMG_API_KEY=${{ secrets.IMG_API_KEY }}"
+          } >> "$GITHUB_ENV"
+
+      - name: Restore release keystore from secret
+        run: |
+          echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 -d > freyja-release.keystore
+          ls -l freyja-release.keystore
 
       - name: Set up Android cmdline-tools
         uses: android-actions/setup-android@v3
-
       - name: Accept Android SDK licenses
-        run: yes | sdkmanager --licenses
-
+        run: yes | "${ANDROID_SDK_ROOT}/cmdline-tools/latest/bin/sdkmanager" --licenses || true
       - name: Install required SDK packages
         run: |
-          sdkmanager "platform-tools" "build-tools;34.0.0" "platforms;android-34"
-
-      # ⬇️ ESCRIBE EL KEYSTORE DESDE EL SECRET
-      - name: Restore release keystore from secret
-        run: |
-          echo -n "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 -d > freyja-release.keystore
-          ls -l freyja-release.keystore
-
-      # ⬇️ Exporta los secrets como env vars para Gradle (coinciden con tu build.gradle.kts)
-      - name: Export signing env vars
-        run: |
-          echo "ANDROID_KEYSTORE_PASSWORD=${{ secrets.ANDROID_KEYSTORE_PASSWORD }}" >> $GITHUB_ENV
-          echo "ANDROID_KEY_ALIAS=${{ secrets.ANDROID_KEY_ALIAS }}" >> $GITHUB_ENV
-          echo "ANDROID_KEY_PASSWORD=${{ secrets.ANDROID_KEY_PASSWORD }}" >> $GITHUB_ENV
-
+          "${ANDROID_SDK_ROOT}/cmdline-tools/latest/bin/sdkmanager" \
+            "platform-tools" \
+            "build-tools;34.0.0" \
+            "platforms;android-34"
+      - name: Create local.properties
+        run: echo "sdk.dir=$ANDROID_SDK_ROOT" > local.properties
       - name: Make gradlew executable
         run: chmod +x gradlew
-
-      - name: Assemble Release
+      - name: Assemble Release (signed)
         run: ./gradlew --no-daemon assembleRelease
-
-      - name: Upload APK
+      - name: Upload Release APK
         uses: actions/upload-artifact@v4
         with:
           name: app-release
           path: app/build/outputs/apk/release/*.apk
-          if-no-files-found: error
+
+      # Copia cifrada del keystore (opcional)
+      - name: Encrypt release keystore
+        if: always()
+        run: |
+          test -f freyja-release.keystore || { echo "No keystore found"; exit 1; }
+          openssl enc -aes-256-cbc -pbkdf2 -iter 200000 \
+            -in freyja-release.keystore \
+            -out freyja-release.keystore.enc \
+            -k "${{ secrets.BACKUP_PASSPHRASE }}"
+      - name: Upload encrypted keystore
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: keystore-backup
+          path: freyja-release.keystore.enc
+          retention-days: 30
