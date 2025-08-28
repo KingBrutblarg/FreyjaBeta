@@ -14,16 +14,18 @@ android {
         versionCode = 1
         versionName = "1.0"
 
-        // BuildConfig.API_BASE_URL desde secret (CI) o fallback local
+        // --- BuildConfig desde secretos (CI) con fallback local seguro ---
         val apiBaseUrl = System.getenv("API_BASE_URL") ?: "https://echo.hoppscotch.io/"
         buildConfigField("String", "API_BASE_URL", "\"$apiBaseUrl\"")
+
         val imgKey = System.getenv("IMG_API_KEY") ?: ""
-        buildConfigField("String", "IMG_API_KEY", "\"${imgKey}\"")
+        buildConfigField("String", "IMG_API_KEY", "\"$imgKey\"")
     }
 
+    // --- Firma de release restaurada por el workflow desde secreto ---
     signingConfigs {
         create("release") {
-            // El workflow restaura freyja-release.keystore en la raíz
+            // El workflow deja el keystore en la raíz del repo
             storeFile = rootProject.file("freyja-release.keystore")
             storePassword = System.getenv("ANDROID_KEYSTORE_PASSWORD")
             keyAlias = System.getenv("ANDROID_KEY_ALIAS")
@@ -53,9 +55,12 @@ android {
         buildConfig = true
     }
 
-    // Par compatible: Kotlin 1.9.25 + Compose Compiler 1.5.15
-    composeOptions { kotlinCompilerExtensionVersion = "1.5.15" }
+    // Compose Compiler compatible con Kotlin 1.9.x
+    composeOptions {
+        kotlinCompilerExtensionVersion = "1.5.15"
+    }
 
+    // Kotlin/JVM 17
     kotlinOptions {
         jvmTarget = "17"
         freeCompilerArgs += listOf(
@@ -64,9 +69,20 @@ android {
         )
     }
 
+    // Java 17
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
+    }
+
+    // --- Pulido de empaquetado: evita choques META-INF y ruidos ---
+    packaging {
+        resources {
+            excludes += "/META-INF/{AL2.0,LGPL2.1,licenses/**}"
+            excludes += "/META-INF/*.version"
+        }
+        // Si alguna AAR trae .so raros y molestan los "Unable to strip", podemos mantener símbolos:
+        // jniLibs.keepDebugSymbols.add("**/*.so")
     }
 }
 
