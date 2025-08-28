@@ -2,8 +2,10 @@ name: Android CI
 
 on:
   push:
-    branches: [ "main", "ci/kotlin-fixes" ]
-  workflow_dispatch:
+    branches:
+      - main
+      - ci/kotlin-fixes
+  workflow_dispatch: {}
 
 jobs:
   build:
@@ -16,24 +18,49 @@ jobs:
         uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: '17'
+          java-version: "17"
           cache: gradle
 
-      - name: Set up Android SDK (cmdline-tools)
+      - name: Set up Android cmdline-tools
         uses: android-actions/setup-android@v3
         with:
-          api-level: 34
-          build-tools: "34.0.0"
+          cmdline-tools-version: 11076708
+
+      - name: Accept Android SDK licenses
+        shell: bash
+        run: |
+          yes | "${ANDROID_SDK_ROOT}/cmdline-tools/latest/bin/sdkmanager" --licenses || true
+
+      - name: Install required SDK packages
+        shell: bash
+        run: |
+          "${ANDROID_SDK_ROOT}/cmdline-tools/latest/bin/sdkmanager" \
+            "platform-tools" \
+            "build-tools;34.0.0" \
+            "platforms;android-34"
 
       - name: Create local.properties
         run: echo "sdk.dir=$ANDROID_SDK_ROOT" > local.properties
 
       - name: Restore release keystore from secret
+        shell: bash
         run: |
           echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 -d > freyja-release.keystore
           ls -lh freyja-release.keystore
 
-      - name: Export signing & API env vars (from GitHub Secrets)
+      - name: Verify keystore & alias from secrets
+        shell: bash
+        env:
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+        run: |
+          test -s freyja-release.keystore
+          keytool -list -v -keystore freyja-release.keystore \
+            -storepass "${ANDROID_KEYSTORE_PASSWORD}" \
+            -alias "${ANDROID_KEY_ALIAS}" | head -n 15
+
+      - name: Export signing & API env vars
+        shell: bash
         run: |
           echo "ANDROID_KEYSTORE_PASSWORD=${{ secrets.ANDROID_KEYSTORE_PASSWORD }}" >> $GITHUB_ENV
           echo "ANDROID_KEY_ALIAS=${{ secrets.ANDROID_KEY_ALIAS }}" >> $GITHUB_ENV
@@ -41,23 +68,16 @@ jobs:
           echo "API_BASE_URL=${{ secrets.API_BASE_URL }}" >> $GITHUB_ENV
           echo "IMG_API_KEY=${{ secrets.IMG_API_KEY }}" >> $GITHUB_ENV
 
-      - name: Verify keystore & alias from secrets
-        run: |
-          test -s freyja-release.keystore
-          keytool -list -v -keystore freyja-release.keystore \
-            -storepass "${ANDROID_KEYSTORE_PASSWORD}" \
-            -alias "${ANDROID_KEY_ALIAS}" | head -n 15
-
       - name: Make gradlew executable
         run: chmod +x gradlew
 
       - name: Assemble Release
-        run: ./gradlew --no-daemon --stacktrace --info assembleRelease
+        run: ./gradlew --no-daemon assembleRelease --stacktrace --info
 
       - name: Upload APK
-        if: always()
+        if: success()
         uses: actions/upload-artifact@v4
         with:
           name: app-release
           path: app/build/outputs/apk/release/*.apk
-          if-no-files-found: warn
+          if-no-files-found: error
