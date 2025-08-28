@@ -8,25 +8,17 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 
-class ApiViewModel : ViewModel() {
-    private val repo = Repository()
+class ApiViewModel(
+    private val repo: Repository = Repository()
+) : ViewModel() {
 
     private val _posts = MutableStateFlow<List<PostDto>>(emptyList())
     val posts: StateFlow<List<PostDto>> = _posts
 
-    private val _isLoading = MutableStateFlow(false)
-    val isLoading: StateFlow<Boolean> = _isLoading
-
-    fun loadPosts() {
+    fun fetchPosts() {
         viewModelScope.launch {
-            _isLoading.value = true
-            try {
-                _posts.value = repo.fetchPosts()
-            } catch (e: Exception) {
-                e.printStackTrace()
-            } finally {
-                _isLoading.value = false
-            }
+            val data = repo.fetchPosts()
+            _posts.value = data
         }
     }
 }
