@@ -2,7 +2,7 @@ name: Android CI
 
 on:
   push:
-    branches: [ "main" ]
+    branches: [ "main" ]     # si quieres que corra en tu rama de trabajo agrega: "ci/kotlin-fixes"
   workflow_dispatch:
 
 jobs:
@@ -11,28 +11,40 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Set up Java
+      - name: Set up Java 17
         uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: "17"
+          cache: gradle
 
-      # Solo instala cmdline-tools
+      # (Opcional) Exporta variables que tu build lee con System.getenv(...)
+      - name: Export signing & app env vars
+        run: |
+          {
+            echo "ANDROID_KEYSTORE_PASSWORD=${{ secrets.ANDROID_KEYSTORE_PASSWORD }}"
+            echo "ANDROID_KEY_ALIAS=${{ secrets.ANDROID_KEY_ALIAS }}"
+            echo "ANDROID_KEY_PASSWORD=${{ secrets.ANDROID_KEY_PASSWORD }}"
+            # Si usas estas en build.gradle.kts:
+            echo "API_BASE_URL=${{ secrets.API_BASE_URL }}"
+            echo "IMG_API_KEY=${{ secrets.IMG_API_KEY }}"
+          } >> "$GITHUB_ENV"
+
+      - name: Restore release keystore from secret
+        run: |
+          echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 -d > freyja-release.keystore
+          ls -l freyja-release.keystore
+
       - name: Set up Android cmdline-tools
         uses: android-actions/setup-android@v3
-        with:
-          cmdline-tools-version: 11076708
 
-      # Acepta TODAS las licencias de forma no interactiva
       - name: Accept Android SDK licenses
         run: |
-          yes | "${ANDROID_SDK_ROOT}/cmdline-tools/12.0/bin/sdkmanager" --licenses || true
           yes | "${ANDROID_SDK_ROOT}/cmdline-tools/latest/bin/sdkmanager" --licenses || true
 
-      # Instala los paquetes necesarios del SDK
       - name: Install required SDK packages
         run: |
-          "${ANDROID_SDK_ROOT}/cmdline-tools/12.0/bin/sdkmanager" \
+          "${ANDROID_SDK_ROOT}/cmdline-tools/latest/bin/sdkmanager" \
             "platform-tools" \
             "build-tools;34.0.0" \
             "platforms;android-34"
@@ -51,3 +63,21 @@ jobs:
         with:
           name: app-release
           path: app/build/outputs/apk/release/*.apk
+
+      # (Opcional pero recomendado) Respaldo cifrado del keystore
+      - name: Encrypt release keystore
+        if: always()
+        run: |
+          test -f freyja-release.keystore || { echo "No keystore found"; exit 1; }
+          openssl enc -aes-256-cbc -pbkdf2 -iter 200000 \
+            -in freyja-release.keystore \
+            -out freyja-release.keystore.enc \
+            -k "${{ secrets.BACKUP_PASSPHRASE }}"
+
+      - name: Upload encrypted keystore (artifact)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: keystore-backup
+          path: freyja-release.keystore.enc
+          retention-days: 30
