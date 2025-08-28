@@ -25,4 +25,8 @@ fun Home() {
     // Muestra mensaje y la lista de ejemplo
     Text("Hola Freyja ✨")
     PostsScreen(vm = ApiViewModel())
+<<<<<<< HEAD
 }
+=======
+}
+>>>>>>> c8e0e8e (feat(app): ApiViewModel con StateFlow y placeholder de ImageGenScreen)
