@@ -2,11 +2,12 @@ name: Android CI
 
 on:
   push:
+    branches: [ "main", "ci/kotlin-fixes" ]
   workflow_dispatch:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v4
 
@@ -14,35 +15,47 @@ jobs:
         uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: 17
+          java-version: "17"
           cache: gradle
 
       - name: Set up Android cmdline-tools
         uses: android-actions/setup-android@v3
+        with:
+          cmdline-tools-version: 11076708
 
       - name: Accept Android SDK licenses
-        run: yes | sdkmanager --licenses
+        run: |
+          yes | "${ANDROID_SDK_ROOT}/cmdline-tools/latest/bin/sdkmanager" --licenses || true
 
       - name: Install required SDK packages
         run: |
-          sdkmanager "platform-tools" "build-tools;34.0.0" "platforms;android-34"
+          "${ANDROID_SDK_ROOT}/cmdline-tools/latest/bin/sdkmanager" \
+            "platform-tools" \
+            "build-tools;34.0.0" \
+            "platforms;android-34"
 
-      # ⬇️ ESCRIBE EL KEYSTORE DESDE EL SECRET
+      - name: Create local.properties
+        run: echo "sdk.dir=$ANDROID_SDK_ROOT" > local.properties
+
+      # ⬇️ Restaurar keystore desde secret (base64)
       - name: Restore release keystore from secret
         run: |
-          echo -n "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 -d > freyja-release.keystore
+          echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 -d > freyja-release.keystore
           ls -l freyja-release.keystore
 
-      # ⬇️ Exporta los secrets como env vars para Gradle (coinciden con tu build.gradle.kts)
-      - name: Export signing env vars
+      # ⬇️ Exportar variables de firmado y de configuración de API
+      - name: Export signing & API env vars
         run: |
           echo "ANDROID_KEYSTORE_PASSWORD=${{ secrets.ANDROID_KEYSTORE_PASSWORD }}" >> $GITHUB_ENV
           echo "ANDROID_KEY_ALIAS=${{ secrets.ANDROID_KEY_ALIAS }}" >> $GITHUB_ENV
           echo "ANDROID_KEY_PASSWORD=${{ secrets.ANDROID_KEY_PASSWORD }}" >> $GITHUB_ENV
+          echo "API_BASE_URL=${{ secrets.API_BASE_URL }}" >> $GITHUB_ENV
+          echo "IMG_API_KEY=${{ secrets.IMG_API_KEY }}" >> $GITHUB_ENV
 
       - name: Make gradlew executable
         run: chmod +x gradlew
 
+      # Compila release firmado (tu app ya referencia estas env vars en build.gradle.kts)
       - name: Assemble Release
         run: ./gradlew --no-daemon assembleRelease
 
@@ -51,4 +64,4 @@ jobs:
         with:
           name: app-release
           path: app/build/outputs/apk/release/*.apk
-          if-no-files-found: error
+          retention-days: 7
