@@ -3,6 +3,7 @@ package com.angeluz.freyja
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.foundation.layout.Column
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -22,11 +23,8 @@ class MainActivity : ComponentActivity() {
 
 @Composable
 fun Home() {
-    // Muestra mensaje y la lista de ejemplo
-    Text("Hola Freyja ✨")
-    PostsScreen(vm = ApiViewModel())
-<<<<<<< HEAD
+    Column {
+        Text("Hola Freyja ✨")
+        PostsScreen(vm = ApiViewModel())
+    }
 }
-=======
-}
->>>>>>> c8e0e8e (feat(app): ApiViewModel con StateFlow y placeholder de ImageGenScreen)
