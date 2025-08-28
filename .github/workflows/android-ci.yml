@@ -2,35 +2,29 @@ name: Android CI
 
 on:
   push:
-    branches: [ "main", "ci/kotlin-fixes" ]
+    branches: [ "main" ]
   workflow_dispatch:
+    inputs:
+      ref:
+        description: "Branch/sha a build"
+        required: false
+        default: "ci/kotlin-fixes"
 
 jobs:
   build:
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-22.04
 
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.inputs.ref || github.ref_name }}
 
-      - name: Set up Java
+      - name: Set up Java 17
         uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: "17"
           cache: gradle
-
-      - name: Restore release keystore from secret
-        run: |
-          echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 -d > freyja-release.keystore
-          ls -l freyja-release.keystore
-
-      - name: Export signing/API env vars
-        run: |
-          echo "ANDROID_KEYSTORE_PASSWORD=${{ secrets.ANDROID_KEYSTORE_PASSWORD }}" >> $GITHUB_ENV
-          echo "ANDROID_KEY_ALIAS=${{ secrets.ANDROID_KEY_ALIAS }}" >> $GITHUB_ENV
-          echo "ANDROID_KEY_PASSWORD=${{ secrets.ANDROID_KEY_PASSWORD }}" >> $GITHUB_ENV
-          echo "API_BASE_URL=${{ secrets.API_BASE_URL }}" >> $GITHUB_ENV
-          echo "IMG_API_KEY=${{ secrets.IMG_API_KEY }}" >> $GITHUB_ENV
 
       - name: Set up Android cmdline-tools
         uses: android-actions/setup-android@v3
@@ -38,7 +32,8 @@ jobs:
           cmdline-tools-version: 11076708
 
       - name: Accept Android SDK licenses
-        run: yes | "${ANDROID_SDK_ROOT}/cmdline-tools/latest/bin/sdkmanager" --licenses
+        run: |
+          yes | "${ANDROID_SDK_ROOT}/cmdline-tools/latest/bin/sdkmanager" --licenses || true
 
       - name: Install required SDK packages
         run: |
@@ -50,21 +45,53 @@ jobs:
       - name: Create local.properties
         run: echo "sdk.dir=$ANDROID_SDK_ROOT" > local.properties
 
+      # 🔐 Restaurar y verificar el keystore ANTES de compilar
+      - name: Restore release keystore from secret
+        shell: bash
+        run: |
+          echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 -d > freyja-release.keystore
+          ls -lh freyja-release.keystore
+          # Verifica que es válido (no imprime contraseñas)
+          keytool -list -v \
+            -keystore freyja-release.keystore \
+            -storepass "${{ secrets.ANDROID_KEYSTORE_PASSWORD }}" \
+            | head -n 20
+
+      # 🌱 Export envs que usa build.gradle.kts
+      - name: Export signing & API env vars
+        shell: bash
+        run: |
+          echo "ANDROID_KEYSTORE_PASSWORD=${{ secrets.ANDROID_KEYSTORE_PASSWORD }}" >> $GITHUB_ENV
+          echo "ANDROID_KEY_ALIAS=${{ secrets.ANDROID_KEY_ALIAS }}"           >> $GITHUB_ENV
+          echo "ANDROID_KEY_PASSWORD=${{ secrets.ANDROID_KEY_PASSWORD }}"     >> $GITHUB_ENV
+          echo "API_BASE_URL=${{ secrets.API_BASE_URL }}"                      >> $GITHUB_ENV
+          echo "IMG_API_KEY=${{ secrets.IMG_API_KEY }}"                        >> $GITHUB_ENV
+
       - name: Make gradlew executable
         run: chmod +x gradlew
 
-      # (Opcional) Debug suave
-      - name: Debug env
+      # 🧪 Build súper verboso para ver por qué falla packageRelease
+      - name: Assemble Release (verbose)
         run: |
-          echo "Keystore bytes: $(stat -c%s freyja-release.keystore || echo 0)"
-          echo "API_BASE_URL set? $([ -n "$API_BASE_URL" ] && echo yes || echo no)"
+          ./gradlew --no-daemon clean assembleRelease \
+            --stacktrace --info --warning-mode all
 
-      - name: Assemble Release
-        run: ./gradlew --no-daemon assembleRelease
-
+      # 📦 Subir APK si todo OK
       - name: Upload APK
+        if: success()
         uses: actions/upload-artifact@v4
         with:
           name: app-release
           path: app/build/outputs/apk/release/*.apk
-          if-no-files-found: error
+          retention-days: 7
+
+      # 🧰 En caso de fallo, dame pistas
+      - name: Dump outputs on failure
+        if: failure()
+        run: |
+          echo "== APK dir =="
+          ls -lah app/build/outputs/apk/release || true
+          echo "== MAPPING =="
+          ls -lah app/build/outputs/mapping/release || true
+          echo "== REPACKAGED CLASSES =="
+          ls -lah app/build/intermediates || true
