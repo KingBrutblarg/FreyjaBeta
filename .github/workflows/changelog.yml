@@ -8,44 +8,66 @@ on:
 jobs:
   changelog:
     runs-on: ubuntu-22.04
+    permissions:
+      contents: write
+    env:
+      DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout default branch (not the tag)
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          ref: ${{ github.event.repository.default_branch }}
+
+      - name: Fetch tags
+        run: git fetch --tags --prune --force
 
       - name: Generate changelog entry
+        shell: bash
         run: |
-          VERSION=${GITHUB_REF_NAME}
+          set -e
+          VERSION="${GITHUB_REF_NAME}"        # ej: v1.0.5
           DATE=$(date +"%Y-%m-%d")
+          PREV_TAG=$(git tag -l 'v*' --sort=-v:refname | grep -v "^${VERSION}$" | head -n1 || true)
 
-          echo "## 🌌 Freyja $VERSION — Guardia Activa ($DATE)" > new_entry.md
-          echo "" >> new_entry.md
-          echo "### ✨ Cambios:" >> new_entry.md
-          git log $(git describe --tags --abbrev=0 --tags --match "v*" --exclude="$VERSION")..HEAD --pretty=format:"- %s" >> new_entry.md || echo "- Primera publicación" >> new_entry.md
+          {
+            echo "## 🌌 Freyja ${VERSION} — Guardia Activa (${DATE})"
+            echo
+            echo "### ✨ Cambios:"
+          } > new_entry.md
 
-          echo "" >> new_entry.md
-          echo "### 🔮 Mejoras Futuras:" >> new_entry.md
-          echo "- Integrar memoria persistente para entrenamientos de combate." >> new_entry.md
-          echo "- Añadir sistema de voz con *hotword* local (\"Despierta, Freyja\")." >> new_entry.md
-          echo "- Modularizar UI para cambiar entre temas: grimorio rúnico, templo estelar, altar de fuego." >> new_entry.md
-          echo "- Optimizar tamaño del APK aplicando shrinkResources y split por ABI." >> new_entry.md
-          echo "" >> new_entry.md
-          echo "---" >> new_entry.md
-          echo "" >> new_entry.md
+          if [ -n "$PREV_TAG" ]; then
+            git log "${PREV_TAG}..${VERSION}" --pretty=format:"- %s" >> new_entry.md || true
+          else
+            git log "${VERSION}" --pretty=format:"- %s" >> new_entry.md || echo "- Primera publicación" >> new_entry.md
+          fi
+
+          {
+            echo
+            echo "### 🔮 Mejoras Futuras:"
+            echo "- Integrar memoria persistente para entrenamientos de combate."
+            echo "- Añadir hotword local (\"Despierta, Freyja\")."
+            echo "- Temas intercambiables: grimorio rúnico / templo estelar / altar de fuego."
+            echo "- Reducir tamaño del APK: shrinkResources + splits por ABI."
+            echo
+            echo "---"
+            echo
+          } >> new_entry.md
 
       - name: Update CHANGELOG.md
         run: |
           if [ -f CHANGELOG.md ]; then
-            cat new_entry.md CHANGELOG.md > CHANGELOG.tmp
-            mv CHANGELOG.tmp CHANGELOG.md
+            cat new_entry.md CHANGELOG.md > CHANGELOG.tmp && mv CHANGELOG.tmp CHANGELOG.md
           else
             cat new_entry.md > CHANGELOG.md
           fi
 
-      - name: Commit and push changelog
+      - name: Commit and push changelog to default branch
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          git config user.name "github-actions[bot]"
+          git config user.name  "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add CHANGELOG.md
-          git commit -m "docs(changelog): update for ${{ github.ref_name }}"
-          git push
+          git commit -m "docs(changelog): update for ${GITHUB_REF_NAME}" || echo "No changes to commit"
+          git push origin HEAD:${DEFAULT_BRANCH}
