@@ -1,103 +1,95 @@
 package com.angeluz.freyja
 
+import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
-import android.speech.tts.TextToSpeech
-import androidx.activity.ComponentActivity
-import androidx.activity.compose.setContent
-import androidx.activity.compose.rememberLauncherForActivityResult
+import android.widget.*
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.unit.dp
-import androidx.lifecycle.viewmodel.compose.viewModel
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
+import androidx.appcompat.app.AlertDialog
+import androidx.appcompat.app.AppCompatActivity
 import java.io.File
-import java.util.*
 
-class StandaloneActivity : ComponentActivity() {
-    private var tts: TextToSpeech? = null
+class StandaloneActivity : AppCompatActivity() {
+
+    private lateinit var txtChat: TextView
+    private lateinit var edtPrompt: EditText
+    private lateinit var btnSend: Button
+
+    // Elegir carpeta SOLO si aún no está configurada
+    private val openTree = registerForActivityResult(ActivityResultContracts.OpenDocumentTree()) { uri: Uri? ->
+        if (uri != null) {
+            val flags = Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION
+            contentResolver.takePersistableUriPermission(uri, flags)
+            ModelStorage.saveModelsTreeUri(this, uri)
+            autoScanAndLoad() // reintentar de inmediato con la carpeta ya guardada
+        } else {
+            txtChat.append("\n\n❌ No se eligió carpeta. Sin modelo.")
+        }
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        tts = TextToSpeech(this) { if (it == TextToSpeech.SUCCESS) tts?.language = Locale("es","MX") }
+        setContentView(R.layout.activity_standalone)
 
-        setContent {
-            MaterialTheme(colorScheme = darkColorScheme(
-                primary = Color(0xFFBFA6FF),
-                background = Color(0xFF0E0D12),
-                surface = Color(0xFF14121A)
-            )) {
-                val vm: TaurielStandaloneViewModel = viewModel()
-                val scope = rememberCoroutineScope()
+        txtChat = findViewById(R.id.txtChat)
+        edtPrompt = findViewById(R.id.edtPrompt)
+        btnSend = findViewById(R.id.btnSend)
 
-                val pick = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri: Uri? ->
-                    if (uri != null) scope.launch(Dispatchers.IO) {
-                        val path = copyToFiles(uri, "model.gguf")
-                        vm.load(path)
-                    }
-                }
+        // 1) Intentar cargar el último modelo ya interno (si existe)
+        val existing = ModelStorage.latestModelFile(this)
+        if (existing != null) {
+            val ok = LlamaBridge.initModel(existing.absolutePath)
+            txtChat.text = if (ok) "⚡ Modelo cargado: ${existing.name}" else "❌ Error cargando ${existing.name}"
+        } else {
+            txtChat.text = "⏳ Buscando modelo…"
+        }
 
-                Surface(Modifier.fillMaxSize().background(Color(0xFF0E0D12))) {
-                    Column(Modifier.fillMaxSize().padding(12.dp)) {
-                        Text("ᚠ La Voz de Freyja — Standalone ᚠ", color=Color(0xFFBFA6FF))
-                        Spacer(Modifier.height(8.dp))
+        // 2) AUTO-SCAN: si no hay modelo interno, busca y mueve el más reciente desde la carpeta configurada
+        if (existing == null) autoScanAndLoad()
 
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Button(onClick = { pick.launch(arrayOf("*/*")) }) { Text("Cargar modelo GGUF") }
-                            Spacer(Modifier.width(8.dp))
-                            val ready = vm.loaded.collectAsState().value
-                            Text(if (ready) "Modelo listo" else "Sin modelo", color=Color.White)
-                        }
-
-                        Spacer(Modifier.height(8.dp))
-                        LazyColumn(Modifier.weight(1f)) {
-                            items(vm.messages) { m ->
-                                Column(Modifier.fillMaxWidth().padding(6.dp)
-                                    .background(if (m.role=="user") Color(0xFF1D1A25) else Color(0xFF10131A))
-                                    .padding(10.dp)) {
-                                    Text(if (m.role=="user") "Tú" else "Tauriel", color=Color(0xFFBFA6FF))
-                                    Spacer(Modifier.height(4.dp))
-                                    Text(m.content, color=Color.White)
-                                }
-                            }
-                        }
-
-                        var input by remember { mutableStateOf("") }
-                        var key by remember { mutableStateOf("") }
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            OutlinedTextField(value=input, onValueChange={input=it},
-                                modifier=Modifier.weight(1f), placeholder={ Text("Háblame…") })
-                            Spacer(Modifier.width(8.dp))
-                            Button(onClick = {
-                                scope.launch { vm.ask(input); tts?.speak(vm.lastAssistant, TextToSpeech.QUEUE_FLUSH, null, "tauriel"); input="" }
-                            }, enabled = vm.loaded.collectAsState().value) { Text("Enviar") }
-                        }
-                        Spacer(Modifier.height(6.dp))
-                        OutlinedTextField(value=key, onValueChange={ key=it; vm.unlock(key) },
-                            placeholder={ Text("Llave rúnica") }, modifier=Modifier.fillMaxWidth())
-                        if (vm.guard.collectAsState().value) {
-                            Text("⚔ Guardia de Freyja ACTIVADA", color=Color(0xFFBFA6FF))
-                        }
-                    }
-                }
+        // Chat
+        btnSend.setOnClickListener {
+            val prompt = edtPrompt.text.toString().trim()
+            if (prompt.isNotEmpty()) {
+                val out = LlamaBridge.infer(prompt)
+                txtChat.append("\n\n👤: $prompt\n\n🤖: $out")
+                edtPrompt.setText("")
             }
         }
     }
 
-    private fun copyToFiles(uri: Uri, name: String): String {
-        val dest = File(filesDir, "models").apply { mkdirs() }
-        val out  = File(dest, name)
-        contentResolver.openInputStream(uri)?.use { inp -> out.outputStream().use { inp.copyTo(it) } }
-        return out.absolutePath
-    }
+    /** Busca en la carpeta elegida; si no hay carpeta, la pide una vez. */
+    private fun autoScanAndLoad() {
+        val savedTree = ModelStorage.getModelsTreeUri(this)
+        if (savedTree == null) {
+            // Primer uso: pedir carpeta
+            AlertDialog.Builder(this)
+                .setTitle("Configurar carpeta de modelos")
+                .setMessage("Elige tu carpeta donde guardas los .gguf (por ejemplo Download o termux_backup/mistral-models). Esto se guarda y no se volverá a pedir.")
+                .setPositiveButton("Elegir carpeta") { _, _ -> openTree.launch(null) }
+                .setNegativeButton("Cancelar") { _, _ ->
+                    txtChat.text = "Sin modelo. Ve a Ajustes y configura la carpeta."
+                }
+                .show()
+            return
+        }
 
-    override fun onDestroy() { tts?.shutdown(); super.onDestroy() }
+        // Con carpeta configurada: buscar el .gguf más reciente
+        val uri = ModelStorage.findLatestGgufInTree(this)
+        if (uri == null) {
+            txtChat.text = "No encontré .gguf en la carpeta configurada."
+            return
+        }
+
+        // Mover (copiar→verificar→borrar origen si se puede)
+        val path = ModelStorage.moveModelFromUri(this, uri)
+        if (path != null) {
+            val ok = LlamaBridge.initModel(path)
+            val name = File(path).name
+            txtChat.text = if (ok) "⚡ Modelo movido y cargado: $name"
+                           else "❌ Falló inicializar $name (pero quedó movido)."
+        } else {
+            txtChat.text = "❌ Falló mover el modelo desde la carpeta."
+        }
+    }
 }
