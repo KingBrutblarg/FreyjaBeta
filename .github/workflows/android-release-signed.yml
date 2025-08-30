@@ -1,0 +1,23 @@
+- name: Print Android env
+  run: |
+    echo "JAVA_HOME=$JAVA_HOME"
+    echo "ANDROID_SDK_ROOT=$ANDROID_SDK_ROOT"
+    sdkmanager --list | head -n 50 || true
+    cmake --version || true
+    ndk-build --version || true
+    echo "---- tree app/src/main/cpp ----"
+    ls -la app/src/main/cpp || true
+    echo "---- CMakeLists.txt ----"
+    cat app/src/main/cpp/CMakeLists.txt || true
+
+- name: Assemble Release (APK + AAB) with verbose logs
+  env:
+    ANDROID_KEYSTORE_PATH: ${{ github.workspace }}/keystore.jks
+    ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+    ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+    ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+    API_BASE_URL: ${{ secrets.API_BASE_URL }}
+  run: |
+    ./gradlew --version
+    ./gradlew --no-daemon --stacktrace --info --warning-mode=all \
+      :app:assembleRelease :app:bundleRelease
