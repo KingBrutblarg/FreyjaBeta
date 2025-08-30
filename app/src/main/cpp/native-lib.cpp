@@ -4,7 +4,7 @@
 extern "C" JNIEXPORT jboolean JNICALL
 Java_com_angeluz_freyja_LlamaBridge_initModel(
         JNIEnv* env, jobject /*thiz*/, jstring /*path*/) {
-    // Stub: siempre "carga" bien
+    // Stub: simula carga correcta
     return JNI_TRUE;
 }
 
