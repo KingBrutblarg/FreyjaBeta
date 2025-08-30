@@ -3,7 +3,7 @@
       android:label="La Voz de Freyja (Standalone)"
       android:allowBackup="true"
       android:supportsRtl="true"
-      android:theme="@style/Theme.Material3.DayNight">
+      android:theme="@style/Theme.Freyja">
 
       <activity android:name=".StandaloneActivity" android:exported="true">
           <intent-filter>
