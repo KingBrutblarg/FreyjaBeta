@@ -1,0 +1,76 @@
+name: Android Release (signed)
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build-release:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          submodules: recursive
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - uses: android-actions/setup-android@v3
+        with:
+          api-level: 34
+          build-tools: "34.0.0"
+          ndk: 26.3.11579264
+          cmake: "3.22.1"
+
+      - name: Create local.properties
+        run: echo "sdk.dir=$ANDROID_SDK_ROOT" > local.properties
+
+      - name: Decode keystore
+        run: echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 -d > keystore.jks
+
+      - name: Assemble Release (APK + AAB)
+        env:
+          ANDROID_KEYSTORE_PATH: ${{ github.workspace }}/keystore.jks
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+          API_BASE_URL: ${{ secrets.API_BASE_URL }}
+        run: ./gradlew --no-daemon clean :app:assembleRelease :app:bundleRelease
+
+      - name: Collect artifacts
+        run: |
+          mkdir -p release_out
+          cp app/build/outputs/apk/release/*.apk release_out/ || true
+          cp app/build/outputs/bundle/release/*.aab release_out/ || true
+          ls -lh release_out
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: freyja-release
+          path: release_out/*
+
+  publish-github-release:
+    needs: build-release
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: freyja-release
+          path: release_out
+      - uses: softprops/action-gh-release@v2
+        with:
+          token: ${{ secrets.RELEASE_TOKEN }}
+          tag_name: ${{ github.ref_name }}
+          name: "Freyja ${{ github.ref_name }}"
+          draft: false
+          prerelease: false
+          files: |
+            release_out/*.apk
+            release_out/*.aab
