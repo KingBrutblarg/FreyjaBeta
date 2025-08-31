@@ -1,92 +1,127 @@
 name: Android Release (signed)
 
 on:
-  workflow_dispatch:
   push:
     tags:
-      - "v*"
+      - 'v*'
+  workflow_dispatch:
 
 jobs:
-  release:
-    runs-on: ubuntu-22.04
+  build:
+    runs-on: ubuntu-latest
     env:
-      # <- Secrets disponibles como variables de entorno
-      API_BASE_URL: ${{ secrets.API_BASE_URL }}
-      BACKUP_PASSPHRASE: ${{ secrets.BACKUP_PASSPHRASE }}
+      JAVA_VERSION: '17'
+      ANDROID_SDK_ROOT: ${{ github.workspace }}/android-sdk
+      ANDROID_NDK_VERSION: '26.3.11579264'
+
+      # Secrets de tu repo
       ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
       ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
       ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
       ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+      API_BASE_URL: ${{ secrets.API_BASE_URL }}
+      BACKUP_PASSPHRASE: ${{ secrets.BACKUP_PASSPHRASE }}
       RELEASE_TOKEN: ${{ secrets.RELEASE_TOKEN }}
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          submodules: recursive
           fetch-depth: 0
 
-      - name: Set up Java 17
+      - name: Set up JDK ${{ env.JAVA_VERSION }}
         uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: "17"
+          java-version: ${{ env.JAVA_VERSION }}
+          cache: gradle
 
-      - name: Set up Android SDK
+      - name: Install Android SDK + NDK
         uses: android-actions/setup-android@v3
         with:
-          api-level: 34
-          build-tools: "34.0.0"
-          ndk: 26.3.11579264
-          cmake: "3.22.1"
+          packages: |
+            platforms;android-34
+            build-tools;34.0.0
+            platform-tools
+            ndk;${{ env.ANDROID_NDK_VERSION }}
 
-      - name: Create local.properties
-        run: |
-          echo "sdk.dir=$ANDROID_SDK_ROOT" > local.properties
-          cat local.properties
-
-      # ---------- LOGIN con RELEASE_TOKEN (gh) ----------
-      - name: Login to GitHub CLI (gh)
-        run: |
-          echo "$RELEASE_TOKEN" | gh auth login --with-token
-          gh auth status
-
-      # ---------- Restaurar keystore desde Base64 ----------
-      - name: Restore Android keystore
+      - name: Restore keystore
+        shell: bash
         run: |
           echo "$ANDROID_KEYSTORE_BASE64" | base64 -d > freyja-release.keystore
-          ls -l freyja-release.keystore
+          echo "ANDROID_KEYSTORE_PATH=${{ github.workspace }}/freyja-release.keystore" >> $GITHUB_ENV
 
-      # ---------- Opcional: ajustar memoria/flags Gradle ----------
-      - name: Gradle Info
-        run: ./gradlew --no-daemon --version
-
-      - name: Clean
-        run: ./gradlew --no-daemon clean
-
-      # ---------- Build Release firmado ----------
-      - name: Assemble Release (signed)
-        env:
-          ANDROID_KEYSTORE_PATH: ${{ github.workspace }}/freyja-release.keystore
-          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
-          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
-          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
-          API_BASE_URL: ${{ secrets.API_BASE_URL }}
-          BACKUP_PASSPHRASE: ${{ secrets.BACKUP_PASSPHRASE }}
+      - name: Gradle properties for CI
         run: |
-          ./gradlew --no-daemon --stacktrace --info --no-parallel --max-workers=1 \
-            :app:assembleRelease
+          cat > gradle.properties <<'EOF'
+          org.gradle.jvmargs=-Xmx4096m -Dfile.encoding=UTF-8
+          org.gradle.parallel=false
+          org.gradle.workers.max=1
+          android.useAndroidX=true
+          android.enableJetifier=true
+          android.enableParallelResourceProcessing=false
+          android.aapt2ThreadPoolSize=1
+          EOF
+          cat gradle.properties
 
-      - name: Upload signed APK
+      # ===== Build con captura de logs =====
+      - name: Build (assembleRelease) con logs
+        shell: bash
+        run: |
+          mkdir -p ci-logs
+          ./gradlew --version | tee ci-logs/00-gradle-version.txt
+          ./gradlew --no-daemon clean | tee ci-logs/01-clean.log
+          # compila con logs detallados
+          set -o pipefail
+          ./gradlew --no-daemon --stacktrace --info \
+            -Pandroid.injected.signing.store.file="${ANDROID_KEYSTORE_PATH}" \
+            -Pandroid.injected.signing.store.password="${ANDROID_KEYSTORE_PASSWORD}" \
+            -Pandroid.injected.signing.key.alias="${ANDROID_KEY_ALIAS}" \
+            -Pandroid.injected.signing.key.password="${ANDROID_KEY_PASSWORD}" \
+            :app:assembleRelease | tee ci-logs/02-assembleRelease.log
+        # Aunque falle, seguimos para subir logs
+        continue-on-error: true
+
+      # ===== Recolecta TODO lo útil =====
+      - name: Recopilar reportes y salidas
+        if: always()
+        run: |
+          mkdir -p ci-logs/buckets
+          # Copia reportes y outputs si existen
+          cp -R app/build/outputs ci-logs/buckets/outputs 2>/dev/null || true
+          cp -R app/build/reports ci-logs/buckets/reports 2>/dev/null || true
+          cp -R app/build/intermediates/cxx ci-logs/buckets/cxx 2>/dev/null || true
+          cp -R app/build/intermediates/merged_manifests ci-logs/buckets/manifests 2>/dev/null || true
+          # Resumen rápido (extrae líneas de error Kotlin/AAPT2)
+          {
+            echo "===== Kotlin errors (e:) ====="
+            grep -n "^e: " ci-logs/02-assembleRelease.log || true
+            echo
+            echo "===== AAPT2 / Android resource linking ====="
+            grep -n "AAPT2" ci-logs/02-assembleRelease.log || true
+            grep -n "Android resource linking failed" -R ci-logs/buckets/reports 2>/dev/null || true
+            echo
+            echo "===== FAILED TASKS ====="
+            grep -n "FAILED" ci-logs/02-assembleRelease.log || true
+            echo
+            echo "===== Stacktraces breves ====="
+            grep -n "at org.gradle" ci-logs/02-assembleRelease.log | head -n 200 || true
+          } > ci-logs/SUMMARY.txt
+
+      - name: Subir artifact de logs
+        if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: app-release-signed
-          path: app/build/outputs/apk/release/*.apk
+          name: build-logs
+          path: ci-logs
 
-      # ---------- Crear/actualizar Release en GitHub ----------
-      - name: Create GitHub Release and upload APK
-        env:
-          TAG: ${{ github.ref_name }}
-        run: |
-          gh release view "$TAG" >/dev/null 2>&1 || gh release create "$TAG" -t "Freyja $TAG" -n "Autogenerated release"
-          gh release upload "$TAG" app/build/outputs/apk/release/*.apk --clobber
+      # (Opcional) publica APK si el build realmente generó artefactos
+      - name: Publicar APKs como artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-release-apks
+          path: |
+            app/build/outputs/**/*.apk
+            app/build/outputs/**/*.aab
+          if-no-files-found: ignore
