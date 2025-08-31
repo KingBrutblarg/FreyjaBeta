@@ -52,3 +52,7 @@ apks/
 
 apks/
 !gradle.properties
+
+# Permitir wrapper de Gradle (no ignorar)
+!gradle/wrapper/
+!gradlew
