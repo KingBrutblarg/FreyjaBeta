@@ -1,16 +1,16 @@
 package com.angeluz.freyja
 
+import android.app.AlertDialog
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
 import android.view.ViewGroup
 import android.widget.*
+import androidx.activity.ComponentActivity
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.appcompat.app.AlertDialog
-import androidx.appcompat.app.AppCompatActivity
 import java.io.File
 
-class StandaloneActivity : AppCompatActivity() {
+class StandaloneActivity : ComponentActivity() {
 
     private lateinit var txtChat: TextView
     private lateinit var edtPrompt: EditText
@@ -54,9 +54,7 @@ class StandaloneActivity : AppCompatActivity() {
             text = "Inicializando…"
             setPadding(0, 16, 0, 16)
         }
-        edtPrompt = EditText(this).apply {
-            hint = "Escribe tu mensaje…"
-        }
+        edtPrompt = EditText(this).apply { hint = "Escribe tu mensaje…" }
         btnSend = Button(this).apply { text = "Enviar" }
 
         content.addView(title)
@@ -81,13 +79,8 @@ class StandaloneActivity : AppCompatActivity() {
         // 2) Si no hay, auto-scan (si hay carpeta guardada)
         if (existing == null) autoScanAndLoad()
 
-        btnPickFolder.setOnClickListener {
-            openTree.launch(null)
-        }
-
-        btnRescan.setOnClickListener {
-            autoScanAndLoad(forceAskIfMissing = true)
-        }
+        btnPickFolder.setOnClickListener { openTree.launch(null) }
+        btnRescan.setOnClickListener { autoScanAndLoad(forceAskIfMissing = true) }
 
         btnSend.setOnClickListener {
             val prompt = edtPrompt.text.toString().trim()
