@@ -1,3 +1,16 @@
+## 🌌 Freyja v1.0.13 — Guardia Activa (2025-08-31)
+
+### ✨ Cambios:
+- Actualizar android-release-signed.yml
+- docs(changelog): update for v1.0.12
+### 🔮 Mejoras Futuras:
+- Integrar memoria persistente para entrenamientos de combate.
+- Añadir hotword local ("Despierta, Freyja").
+- Temas intercambiables: grimorio rúnico / templo estelar / altar de fuego.
+- Reducir tamaño del APK: shrinkResources + splits por ABI.
+
+---
+
 ## 🌌 Freyja v1.0.12 — Guardia Activa (2025-08-31)
 
 ### ✨ Cambios:
