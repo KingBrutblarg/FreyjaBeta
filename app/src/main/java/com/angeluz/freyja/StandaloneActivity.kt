@@ -3,6 +3,7 @@ package com.angeluz.freyja
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
+import android.view.ViewGroup
 import android.widget.*
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
@@ -15,27 +16,60 @@ class StandaloneActivity : AppCompatActivity() {
     private lateinit var edtPrompt: EditText
     private lateinit var btnSend: Button
 
-    // Elegir carpeta SOLO si aún no está configurada
     private val openTree = registerForActivityResult(ActivityResultContracts.OpenDocumentTree()) { uri: Uri? ->
         if (uri != null) {
             val flags = Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION
             contentResolver.takePersistableUriPermission(uri, flags)
             ModelStorage.saveModelsTreeUri(this, uri)
-            autoScanAndLoad() // reintentar de inmediato con la carpeta ya guardada
+            autoScanAndLoad()
         } else {
-            txtChat.append("\n\n❌ No se eligió carpeta. Sin modelo.")
+            toast("No se eligió carpeta.")
         }
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_standalone)
 
-        txtChat = findViewById(R.id.txtChat)
-        edtPrompt = findViewById(R.id.edtPrompt)
-        btnSend = findViewById(R.id.btnSend)
+        // ---- UI programática (sin XML) ----
+        val root = ScrollView(this).apply {
+            layoutParams = ViewGroup.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.MATCH_PARENT
+            )
+        }
+        val content = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(32, 32, 32, 32)
+        }
+        root.addView(content)
 
-        // 1) Intentar cargar el último modelo ya interno (si existe)
+        val title = TextView(this).apply {
+            text = "Freyja Standalone"
+            textSize = 20f
+        }
+        val btnPickFolder = Button(this).apply { text = "Elegir carpeta de modelos" }
+        val btnRescan = Button(this).apply { text = "Re-scan y cargar" }
+
+        txtChat = TextView(this).apply {
+            text = "Inicializando…"
+            setPadding(0, 16, 0, 16)
+        }
+        edtPrompt = EditText(this).apply {
+            hint = "Escribe tu mensaje…"
+        }
+        btnSend = Button(this).apply { text = "Enviar" }
+
+        content.addView(title)
+        content.addView(btnPickFolder)
+        content.addView(btnRescan)
+        content.addView(txtChat)
+        content.addView(edtPrompt)
+        content.addView(btnSend)
+
+        setContentView(root)
+        // -----------------------------------
+
+        // 1) Intentar cargar modelo interno
         val existing = ModelStorage.latestModelFile(this)
         if (existing != null) {
             val ok = LlamaBridge.initModel(existing.absolutePath)
@@ -44,10 +78,17 @@ class StandaloneActivity : AppCompatActivity() {
             txtChat.text = "⏳ Buscando modelo…"
         }
 
-        // 2) AUTO-SCAN: si no hay modelo interno, busca y mueve el más reciente desde la carpeta configurada
+        // 2) Si no hay, auto-scan (si hay carpeta guardada)
         if (existing == null) autoScanAndLoad()
 
-        // Chat
+        btnPickFolder.setOnClickListener {
+            openTree.launch(null)
+        }
+
+        btnRescan.setOnClickListener {
+            autoScanAndLoad(forceAskIfMissing = true)
+        }
+
         btnSend.setOnClickListener {
             val prompt = edtPrompt.text.toString().trim()
             if (prompt.isNotEmpty()) {
@@ -58,38 +99,38 @@ class StandaloneActivity : AppCompatActivity() {
         }
     }
 
-    /** Busca en la carpeta elegida; si no hay carpeta, la pide una vez. */
-    private fun autoScanAndLoad() {
+    private fun autoScanAndLoad(forceAskIfMissing: Boolean = false) {
         val savedTree = ModelStorage.getModelsTreeUri(this)
         if (savedTree == null) {
-            // Primer uso: pedir carpeta
-            AlertDialog.Builder(this)
-                .setTitle("Configurar carpeta de modelos")
-                .setMessage("Elige tu carpeta donde guardas los .gguf (por ejemplo Download o termux_backup/mistral-models). Esto se guarda y no se volverá a pedir.")
-                .setPositiveButton("Elegir carpeta") { _, _ -> openTree.launch(null) }
-                .setNegativeButton("Cancelar") { _, _ ->
-                    txtChat.text = "Sin modelo. Ve a Ajustes y configura la carpeta."
-                }
-                .show()
+            if (forceAskIfMissing) {
+                AlertDialog.Builder(this)
+                    .setTitle("Configurar carpeta de modelos")
+                    .setMessage("Elige tu carpeta donde guardas los .gguf (Download o termux_backup/mistral-models).")
+                    .setPositiveButton("Elegir") { _, _ -> openTree.launch(null) }
+                    .setNegativeButton("Cancelar", null)
+                    .show()
+            } else {
+                txtChat.text = "Sin carpeta de modelos configurada. Usa 'Elegir carpeta de modelos'."
+            }
             return
         }
 
-        // Con carpeta configurada: buscar el .gguf más reciente
         val uri = ModelStorage.findLatestGgufInTree(this)
         if (uri == null) {
             txtChat.text = "No encontré .gguf en la carpeta configurada."
             return
         }
 
-        // Mover (copiar→verificar→borrar origen si se puede)
         val path = ModelStorage.moveModelFromUri(this, uri)
         if (path != null) {
             val ok = LlamaBridge.initModel(path)
             val name = File(path).name
             txtChat.text = if (ok) "⚡ Modelo movido y cargado: $name"
-                           else "❌ Falló inicializar $name (pero quedó movido)."
+                           else "❌ Falló inicializar $name (quedó movido)."
         } else {
             txtChat.text = "❌ Falló mover el modelo desde la carpeta."
         }
     }
+
+    private fun toast(msg: String) = Toast.makeText(this, msg, Toast.LENGTH_SHORT).show()
 }
