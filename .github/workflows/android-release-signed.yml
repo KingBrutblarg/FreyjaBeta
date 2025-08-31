@@ -10,8 +10,15 @@
     echo "---- CMakeLists.txt ----"
     cat app/src/main/cpp/CMakeLists.txt || true
 
+- name: Purge Gradle caches
+  run: |
+    rm -rf ~/.gradle/caches/* ~/.gradle/daemon/* || true
+    rm -rf ~/.android/build-cache || true
+    echo "Caches purgadas"
+
 - name: Assemble Release (APK + AAB) with verbose logs
   env:
+    GRADLE_OPTS: -Xmx6g
     ANDROID_KEYSTORE_PATH: ${{ github.workspace }}/keystore.jks
     ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
     ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
