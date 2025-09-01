@@ -2,9 +2,6 @@ name: Android Release (signed)
 
 on:
   workflow_dispatch:
-  push:
-    tags:
-      - 'v*'
 
 permissions:
   contents: read
@@ -21,12 +18,9 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      # Prelog: garantizamos que SIEMPRE haya archivos en el artifact
-      - name: Pre-create log files
-        shell: bash
+      - name: Pre-create log files (siempre hay artifact)
         run: |
           mkdir -p ci-logs
           : > ci-logs/00-gradle-version.txt
@@ -35,14 +29,12 @@ jobs:
           : > ci-logs/env.txt
           echo "prelog=ok" > ci-logs/exitcode.txt
 
-      - name: Set up JDK ${{ env.JAVA_VERSION }}
-        uses: actions/setup-java@v4
+      - uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: ${{ env.JAVA_VERSION }}
 
-      - name: Set up Android SDK + NDK
-        uses: android-actions/setup-android@v3
+      - uses: android-actions/setup-android@v3
         with:
           packages: |
             platforms;android-34
@@ -58,22 +50,11 @@ jobs:
             echo "PWD=$(pwd)"
             echo "JAVA_HOME=$JAVA_HOME"
             echo "ANDROID_SDK_ROOT=$ANDROID_SDK_ROOT"
-            echo "ls gradlew:"
-            ls -l gradlew || true
-            echo "ls gradle/wrapper:"
-            ls -l gradle/wrapper || true
+            echo "ls gradlew:"; ls -l gradlew || true
+            echo "ls gradle/wrapper:"; ls -l gradle/wrapper || true
           } >> ci-logs/env.txt
 
-      - name: Restore keystore
-        shell: bash
-        env:
-          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
-        run: |
-          echo "$ANDROID_KEYSTORE_BASE64" | base64 -d > freyja-release.keystore
-          echo "ANDROID_KEYSTORE_PATH=${{ github.workspace }}/freyja-release.keystore" >> $GITHUB_ENV
-
       - name: Gradle properties for CI
-        shell: bash
         run: |
           cat > gradle.properties <<'EOF'
           org.gradle.jvmargs=-Xmx4096m -Dfile.encoding=UTF-8
@@ -87,28 +68,28 @@ jobs:
           cat gradle.properties >> ci-logs/env.txt
 
       - name: Gradle version
-        shell: bash
         run: ./gradlew --version | tee ci-logs/00-gradle-version.txt || true
 
       - name: Clean
-        shell: bash
         run: ./gradlew --no-daemon clean | tee ci-logs/01-clean.log || true
 
-      # ============ BUILD CON CAPTURA DE LOGS SIEMPRE ============
       - name: Build (assembleRelease) con logs robustos
         shell: bash
         env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
           ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
           ANDROID_KEY_ALIAS:        ${{ secrets.ANDROID_KEY_ALIAS }}
           ANDROID_KEY_PASSWORD:     ${{ secrets.ANDROID_KEY_PASSWORD }}
           API_BASE_URL:             ${{ secrets.API_BASE_URL }}
           BACKUP_PASSPHRASE:        ${{ secrets.BACKUP_PASSPHRASE }}
         run: |
+          echo "$ANDROID_KEYSTORE_BASE64" | base64 -d > freyja-release.keystore
+          echo "ANDROID_KEYSTORE_PATH=${{ github.workspace }}/freyja-release.keystore" >> $GITHUB_ENV
           set +e
           (
             ./gradlew --no-daemon --stacktrace --info --console=plain \
               -Dorg.gradle.logging.stacktrace=all \
-              -Pandroid.injected.signing.store.file="${ANDROID_KEYSTORE_PATH}" \
+              -Pandroid.injected.signing.store.file="${{ github.workspace }}/freyja-release.keystore" \
               -Pandroid.injected.signing.store.password="${ANDROID_KEYSTORE_PASSWORD}" \
               -Pandroid.injected.signing.key.alias="${ANDROID_KEY_ALIAS}" \
               -Pandroid.injected.signing.key.password="${ANDROID_KEY_PASSWORD}" \
@@ -118,23 +99,15 @@ jobs:
           set -e
         continue-on-error: true
 
-      - name: Recopilar reportes y salidas
+      - name: Resumen rápido
         if: always()
-        shell: bash
         run: |
-          mkdir -p ci-logs/buckets
-          cp -R app/build/outputs ci-logs/buckets/outputs 2>/dev/null || true
-          cp -R app/build/reports ci-logs/buckets/reports 2>/dev/null || true
-          cp -R app/build/intermediates/merged_manifests ci-logs/buckets/manifests 2>/dev/null || true
-          cp -R app/build/intermediates/cxx ci-logs/buckets/cxx 2>/dev/null || true
-
           {
             echo "===== Kotlin errors (e:) ====="
             grep -n "^e: " ci-logs/02-assembleRelease.log || true
             echo
             echo "===== AAPT2 / Android resource linking ====="
             grep -n "AAPT2" ci-logs/02-assembleRelease.log || true
-            grep -n "Android resource linking failed" -R ci-logs/buckets/reports 2>/dev/null || true
             echo
             echo "===== FAILED TASKS ====="
             grep -n "FAILED" ci-logs/02-assembleRelease.log || true
