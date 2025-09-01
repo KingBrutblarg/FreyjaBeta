@@ -5,7 +5,9 @@ plugins {
 
 android {
     namespace = "com.angeluz.freyja"
+
     compileSdk = 34
+    buildToolsVersion = "33.0.2"      // evita el crash del aapt2 34.0.0
     ndkVersion = "26.3.11579264"
 
     defaultConfig {
@@ -36,12 +38,12 @@ android {
     }
 
     buildFeatures {
-        // Necesario para BuildConfig.*
         buildConfig = true
-        // Compose activado
         compose = true
     }
-    composeOptions { kotlinCompilerExtensionVersion = "1.5.15" }
+    composeOptions {
+        kotlinCompilerExtensionVersion = "1.5.15"
+    }
 
     // Empaquetado JNI clásico (si tus .so se ubican en jniLibs/)
     packaging {
@@ -50,11 +52,14 @@ android {
     }
 
     // Ruta del CMakeLists.txt del módulo app
-    externalNativeBuild { cmake { path = file("src/main/cpp/CMakeLists.txt") } }
+    externalNativeBuild {
+        cmake {
+            path = file("src/main/cpp/CMakeLists.txt")
+        }
+    }
 
     signingConfigs {
         create("release") {
-            // Del workflow: ANDROID_KEYSTORE_PATH apunta al keystore restaurado
             storeFile = file(System.getenv("ANDROID_KEYSTORE_PATH") ?: "freyja-release.keystore")
             storePassword = System.getenv("ANDROID_KEYSTORE_PASSWORD")
             keyAlias = System.getenv("ANDROID_KEY_ALIAS")
@@ -67,7 +72,6 @@ android {
             isMinifyEnabled = false
             signingConfig = signingConfigs.getByName("release")
 
-            // Inyectar secrets como BuildConfig.* (tolerante si faltan)
             val apiBase = System.getenv("API_BASE_URL") ?: ""
             val pass = System.getenv("BACKUP_PASSPHRASE") ?: ""
             buildConfigField("String", "API_BASE_URL", "\"$apiBase\"")
@@ -86,7 +90,7 @@ dependencies {
     // Utilidades de almacenamiento (SAF - carpetas)
     implementation("androidx.documentfile:documentfile:1.0.1")
 
-    // Descarga por URL (si usas downloader)
+    // Descarga por URL
     implementation("com.squareup.okhttp3:okhttp:4.12.0")
 
     // Compose BOM + componentes
@@ -97,13 +101,12 @@ dependencies {
     implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.8.4")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.8.1")
 
-    // KTX base para Activity y Core (necesarios)
+    // KTX base
     implementation("androidx.activity:activity-ktx:1.9.2")
     implementation("androidx.core:core-ktx:1.13.1")
 
-    // Material (views/clásico) por si alguna parte lo usa; no es AppCompat
+    // Material clásico si alguna vista lo usa
     implementation("com.google.android.material:material:1.12.0")
-
-    // ⚠️ AppCompat solo si usas AppCompatActivity. Si ya migramos a ComponentActivity, puedes omitirlo:
+    // AppCompat solo si usas AppCompatActivity:
     // implementation("androidx.appcompat:appcompat:1.7.0")
 }
