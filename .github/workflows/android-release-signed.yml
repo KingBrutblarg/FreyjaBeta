@@ -15,7 +15,6 @@ env:
   ANDROID_NDK_VERSION: '26.3.11579264'
   ANDROID_SDK_ROOT: ${{ github.workspace }}/android-sdk
   ANDROID_HOME: ${{ github.workspace }}/android-sdk
-  PATH: ${{ github.workspace }}/android-sdk/cmdline-tools/latest/bin:${{ github.workspace }}/android-sdk/platform-tools:${{ env.PATH }}
 
 jobs:
   build:
@@ -48,28 +47,29 @@ jobs:
           mkdir -p "${ANDROID_SDK_ROOT}"
           echo "ANDROID_SDK_ROOT=${ANDROID_SDK_ROOT}" | tee -a ci-logs/env.txt
 
-          # Descargar commandlinetools (último zip estable de Google)
           cd "${ANDROID_SDK_ROOT}"
           curl -L -o commandlinetools.zip https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip
           mkdir -p cmdline-tools
           unzip -q commandlinetools.zip -d cmdline-tools
-          # mover a 'latest' como espera sdkmanager
           mv cmdline-tools/cmdline-tools cmdline-tools/latest
 
-          # Ver PATH y sdkmanager
-          echo "PATH=${PATH}" | tee -a "${GITHUB_WORKSPACE}/ci-logs/env.txt"
-          yes | cmdline-tools/latest/bin/sdkmanager --list | tee "${GITHUB_WORKSPACE}/ci-logs/sdkmanager-before.txt" || true
+          # Exportar herramientas al PATH de este workflow
+          {
+            echo "${ANDROID_SDK_ROOT}/cmdline-tools/latest/bin"
+            echo "${ANDROID_SDK_ROOT}/platform-tools"
+          } >> "$GITHUB_PATH"
 
-          # Instalar paquetes requeridos (plataforma, build-tools, platform-tools y NDK exacta)
-          yes | cmdline-tools/latest/bin/sdkmanager \
+          yes | "${ANDROID_SDK_ROOT}/cmdline-tools/latest/bin/sdkmanager" --list | tee "${GITHUB_WORKSPACE}/ci-logs/sdkmanager-before.txt" || true
+
+          yes | "${ANDROID_SDK_ROOT}/cmdline-tools/latest/bin/sdkmanager" \
             "platform-tools" \
             "build-tools;34.0.0" \
             "platforms;android-34" \
             "ndk;${ANDROID_NDK_VERSION}" \
             | tee -a "${GITHUB_WORKSPACE}/ci-logs/02-assembleRelease.log" || true
 
-          yes | cmdline-tools/latest/bin/sdkmanager --licenses | tee -a "${GITHUB_WORKSPACE}/ci-logs/02-assembleRelease.log" || true
-          yes | cmdline-tools/latest/bin/sdkmanager --list | tee "${GITHUB_WORKSPACE}/ci-logs/sdkmanager-after.txt" || true
+          yes | "${ANDROID_SDK_ROOT}/cmdline-tools/latest/bin/sdkmanager" --licenses | tee -a "${GITHUB_WORKSPACE}/ci-logs/02-assembleRelease.log" || true
+          yes | "${ANDROID_SDK_ROOT}/cmdline-tools/latest/bin/sdkmanager" --list | tee "${GITHUB_WORKSPACE}/ci-logs/sdkmanager-after.txt" || true
 
       - name: Gradle wrapper preflight
         shell: bash
@@ -80,6 +80,7 @@ jobs:
             echo "JAVA_HOME=$JAVA_HOME"
             echo "ANDROID_SDK_ROOT=$ANDROID_SDK_ROOT"
             echo "ANDROID_NDK_HOME=$ANDROID_SDK_ROOT/ndk/${{ env.ANDROID_NDK_VERSION }}"
+            echo "PATH=$PATH"
             echo "ls gradlew:"; ls -l gradlew || true
             echo "ls gradle/wrapper:"; ls -l gradle/wrapper || true
           } >> ci-logs/env.txt
