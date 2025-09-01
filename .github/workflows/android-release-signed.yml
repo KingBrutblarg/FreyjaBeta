@@ -13,6 +13,9 @@ concurrency:
 env:
   JAVA_VERSION: '17'
   ANDROID_NDK_VERSION: '26.3.11579264'
+  ANDROID_SDK_ROOT: ${{ github.workspace }}/android-sdk
+  ANDROID_HOME: ${{ github.workspace }}/android-sdk
+  PATH: ${{ github.workspace }}/android-sdk/cmdline-tools/latest/bin:${{ github.workspace }}/android-sdk/platform-tools:${{ env.PATH }}
 
 jobs:
   build:
@@ -37,32 +40,36 @@ jobs:
           distribution: temurin
           java-version: ${{ env.JAVA_VERSION }}
 
-      # Usamos el action sólo para tener sdkmanager disponible y ANDROID_SDK_ROOT configurado
-      - name: Set up Android SDK base
-        uses: android-actions/setup-android@v3
-
-      # Instalación MANUAL de SDK/NDK con logs detallados
-      - name: Install Android SDK + NDK (manual con logs)
+      # Instalación MANUAL del SDK + cmdline-tools + NDK
+      - name: Install Android SDK/NDK manually (no actions)
         shell: bash
         run: |
-          echo "=== sdkmanager LIST BEFORE ===" | tee -a ci-logs/02-assembleRelease.log
-          yes | sdkmanager --list | tee ci-logs/sdkmanager-before.txt || true
+          set -euxo pipefail
+          mkdir -p "${ANDROID_SDK_ROOT}"
+          echo "ANDROID_SDK_ROOT=${ANDROID_SDK_ROOT}" | tee -a ci-logs/env.txt
 
-          echo "=== sdkmanager INSTALL ===" | tee -a ci-logs/02-assembleRelease.log
-          yes | sdkmanager --install \
-            "platforms;android-34" \
-            "build-tools;34.0.0" \
+          # Descargar commandlinetools (último zip estable de Google)
+          cd "${ANDROID_SDK_ROOT}"
+          curl -L -o commandlinetools.zip https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip
+          mkdir -p cmdline-tools
+          unzip -q commandlinetools.zip -d cmdline-tools
+          # mover a 'latest' como espera sdkmanager
+          mv cmdline-tools/cmdline-tools cmdline-tools/latest
+
+          # Ver PATH y sdkmanager
+          echo "PATH=${PATH}" | tee -a "${GITHUB_WORKSPACE}/ci-logs/env.txt"
+          yes | cmdline-tools/latest/bin/sdkmanager --list | tee "${GITHUB_WORKSPACE}/ci-logs/sdkmanager-before.txt" || true
+
+          # Instalar paquetes requeridos (plataforma, build-tools, platform-tools y NDK exacta)
+          yes | cmdline-tools/latest/bin/sdkmanager \
             "platform-tools" \
-            "ndk;${{ env.ANDROID_NDK_VERSION }}" \
-            | tee -a ci-logs/02-assembleRelease.log || true
+            "build-tools;34.0.0" \
+            "platforms;android-34" \
+            "ndk;${ANDROID_NDK_VERSION}" \
+            | tee -a "${GITHUB_WORKSPACE}/ci-logs/02-assembleRelease.log" || true
 
-          echo "=== sdkmanager LIST AFTER ===" | tee -a ci-logs/02-assembleRelease.log
-          yes | sdkmanager --list | tee ci-logs/sdkmanager-after.txt || true
-
-          # Export para Gradle/cmake (aunque AGP use ndkVersion, esto nos ayuda a depurar)
-          echo "ANDROID_SDK_ROOT=$ANDROID_SDK_ROOT" >> $GITHUB_ENV
-          echo "ANDROID_NDK_HOME=$ANDROID_SDK_ROOT/ndk/${{ env.ANDROID_NDK_VERSION }}" >> $GITHUB_ENV
-          echo "PATH=$ANDROID_SDK_ROOT/platform-tools:$ANDROID_SDK_ROOT/emulator:$PATH" >> $GITHUB_ENV
+          yes | cmdline-tools/latest/bin/sdkmanager --licenses | tee -a "${GITHUB_WORKSPACE}/ci-logs/02-assembleRelease.log" || true
+          yes | cmdline-tools/latest/bin/sdkmanager --list | tee "${GITHUB_WORKSPACE}/ci-logs/sdkmanager-after.txt" || true
 
       - name: Gradle wrapper preflight
         shell: bash
@@ -72,7 +79,7 @@ jobs:
             echo "PWD=$(pwd)"
             echo "JAVA_HOME=$JAVA_HOME"
             echo "ANDROID_SDK_ROOT=$ANDROID_SDK_ROOT"
-            echo "ANDROID_NDK_HOME=$ANDROID_NDK_HOME"
+            echo "ANDROID_NDK_HOME=$ANDROID_SDK_ROOT/ndk/${{ env.ANDROID_NDK_VERSION }}"
             echo "ls gradlew:"; ls -l gradlew || true
             echo "ls gradle/wrapper:"; ls -l gradle/wrapper || true
           } >> ci-logs/env.txt
