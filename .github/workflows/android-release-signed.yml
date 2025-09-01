@@ -29,12 +29,14 @@ jobs:
           : > ci-logs/env.txt
           echo "prelog=ok" > ci-logs/exitcode.txt
 
-      - uses: actions/setup-java@v4
+      - name: Set up JDK
+        uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: ${{ env.JAVA_VERSION }}
 
-      - uses: android-actions/setup-android@v3
+      - name: Set up Android SDK + NDK
+        uses: android-actions/setup-android@v3
         with:
           packages: |
             platforms;android-34
