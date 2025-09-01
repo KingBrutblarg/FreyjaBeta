@@ -41,7 +41,7 @@ android {
         // Compose activado
         compose = true
     }
-    composeOptions { kotlinCompilerExtensionVersion = "1.5.14" }
+    composeOptions { kotlinCompilerExtensionVersion = "1.5.15" }
 
     // Empaquetado JNI clásico (si tus .so se ubican en jniLibs/)
     packaging {
