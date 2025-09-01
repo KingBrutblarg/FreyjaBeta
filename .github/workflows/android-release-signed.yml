@@ -27,6 +27,8 @@ jobs:
           : > ci-logs/01-clean.log
           : > ci-logs/02-assembleRelease.log
           : > ci-logs/env.txt
+          : > ci-logs/sdkmanager-before.txt
+          : > ci-logs/sdkmanager-after.txt
           echo "prelog=ok" > ci-logs/exitcode.txt
 
       - name: Set up JDK
@@ -35,14 +37,32 @@ jobs:
           distribution: temurin
           java-version: ${{ env.JAVA_VERSION }}
 
-      - name: Set up Android SDK + NDK
+      # Usamos el action sólo para tener sdkmanager disponible y ANDROID_SDK_ROOT configurado
+      - name: Set up Android SDK base
         uses: android-actions/setup-android@v3
-        with:
-          packages: |
-            platforms;android-34
-            build-tools;34.0.0
-            platform-tools
-            ndk;${{ env.ANDROID_NDK_VERSION }}
+
+      # Instalación MANUAL de SDK/NDK con logs detallados
+      - name: Install Android SDK + NDK (manual con logs)
+        shell: bash
+        run: |
+          echo "=== sdkmanager LIST BEFORE ===" | tee -a ci-logs/02-assembleRelease.log
+          yes | sdkmanager --list | tee ci-logs/sdkmanager-before.txt || true
+
+          echo "=== sdkmanager INSTALL ===" | tee -a ci-logs/02-assembleRelease.log
+          yes | sdkmanager --install \
+            "platforms;android-34" \
+            "build-tools;34.0.0" \
+            "platform-tools" \
+            "ndk;${{ env.ANDROID_NDK_VERSION }}" \
+            | tee -a ci-logs/02-assembleRelease.log || true
+
+          echo "=== sdkmanager LIST AFTER ===" | tee -a ci-logs/02-assembleRelease.log
+          yes | sdkmanager --list | tee ci-logs/sdkmanager-after.txt || true
+
+          # Export para Gradle/cmake (aunque AGP use ndkVersion, esto nos ayuda a depurar)
+          echo "ANDROID_SDK_ROOT=$ANDROID_SDK_ROOT" >> $GITHUB_ENV
+          echo "ANDROID_NDK_HOME=$ANDROID_SDK_ROOT/ndk/${{ env.ANDROID_NDK_VERSION }}" >> $GITHUB_ENV
+          echo "PATH=$ANDROID_SDK_ROOT/platform-tools:$ANDROID_SDK_ROOT/emulator:$PATH" >> $GITHUB_ENV
 
       - name: Gradle wrapper preflight
         shell: bash
@@ -52,6 +72,7 @@ jobs:
             echo "PWD=$(pwd)"
             echo "JAVA_HOME=$JAVA_HOME"
             echo "ANDROID_SDK_ROOT=$ANDROID_SDK_ROOT"
+            echo "ANDROID_NDK_HOME=$ANDROID_NDK_HOME"
             echo "ls gradlew:"; ls -l gradlew || true
             echo "ls gradle/wrapper:"; ls -l gradle/wrapper || true
           } >> ci-logs/env.txt
@@ -78,15 +99,16 @@ jobs:
       - name: Build (assembleRelease) con logs robustos
         shell: bash
         env:
-          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
-          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
-          ANDROID_KEY_ALIAS:        ${{ secrets.ANDROID_KEY_ALIAS }}
-          ANDROID_KEY_PASSWORD:     ${{ secrets.ANDROID_KEY_PASSWORD }}
-          API_BASE_URL:             ${{ secrets.API_BASE_URL }}
-          BACKUP_PASSPHRASE:        ${{ secrets.BACKUP_PASSPHRASE }}
+          ANDROID_KEYSTORE_BASE64:      ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          ANDROID_KEYSTORE_PASSWORD:    ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS:            ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD:         ${{ secrets.ANDROID_KEY_PASSWORD }}
+          API_BASE_URL:                 ${{ secrets.API_BASE_URL }}
+          BACKUP_PASSPHRASE:            ${{ secrets.BACKUP_PASSPHRASE }}
         run: |
           echo "$ANDROID_KEYSTORE_BASE64" | base64 -d > freyja-release.keystore
           echo "ANDROID_KEYSTORE_PATH=${{ github.workspace }}/freyja-release.keystore" >> $GITHUB_ENV
+
           set +e
           (
             ./gradlew --no-daemon --stacktrace --info --console=plain \
