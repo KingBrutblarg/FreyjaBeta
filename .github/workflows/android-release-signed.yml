@@ -24,6 +24,17 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      # Prelog: garantizamos que SIEMPRE haya archivos en el artifact
+      - name: Pre-create log files
+        shell: bash
+        run: |
+          mkdir -p ci-logs
+          : > ci-logs/00-gradle-version.txt
+          : > ci-logs/01-clean.log
+          : > ci-logs/02-assembleRelease.log
+          : > ci-logs/env.txt
+          echo "prelog=ok" > ci-logs/exitcode.txt
+
       - name: Set up JDK ${{ env.JAVA_VERSION }}
         uses: actions/setup-java@v4
         with:
@@ -43,10 +54,15 @@ jobs:
         shell: bash
         run: |
           chmod +x gradlew || true
-          echo "Wrapper perms:"
-          ls -l gradlew || true
-          echo "Wrapper dir:"
-          ls -l gradle/wrapper || true
+          {
+            echo "PWD=$(pwd)"
+            echo "JAVA_HOME=$JAVA_HOME"
+            echo "ANDROID_SDK_ROOT=$ANDROID_SDK_ROOT"
+            echo "ls gradlew:"
+            ls -l gradlew || true
+            echo "ls gradle/wrapper:"
+            ls -l gradle/wrapper || true
+          } >> ci-logs/env.txt
 
       - name: Restore keystore
         shell: bash
@@ -68,7 +84,15 @@ jobs:
           android.enableParallelResourceProcessing=false
           android.aapt2ThreadPoolSize=1
           EOF
-          cat gradle.properties
+          cat gradle.properties >> ci-logs/env.txt
+
+      - name: Gradle version
+        shell: bash
+        run: ./gradlew --version | tee ci-logs/00-gradle-version.txt || true
+
+      - name: Clean
+        shell: bash
+        run: ./gradlew --no-daemon clean | tee ci-logs/01-clean.log || true
 
       # ============ BUILD CON CAPTURA DE LOGS SIEMPRE ============
       - name: Build (assembleRelease) con logs robustos
@@ -81,20 +105,6 @@ jobs:
           BACKUP_PASSPHRASE:        ${{ secrets.BACKUP_PASSPHRASE }}
         run: |
           set +e
-          mkdir -p ci-logs
-          : > ci-logs/02-assembleRelease.log
-          : > ci-logs/env.txt
-          echo "PWD=$(pwd)" >> ci-logs/env.txt
-          echo "JAVA_HOME=$JAVA_HOME" >> ci-logs/env.txt
-          echo "ANDROID_SDK_ROOT=$ANDROID_SDK_ROOT" >> ci-logs/env.txt
-          echo "ls gradlew:" >> ci-logs/env.txt
-          ls -l gradlew >> ci-logs/env.txt || true
-          echo "ls gradle/wrapper:" >> ci-logs/env.txt
-          ls -l gradle/wrapper >> ci-logs/env.txt || true
-
-          ./gradlew --version | tee ci-logs/00-gradle-version.txt || true
-          ./gradlew --no-daemon clean | tee ci-logs/01-clean.log || true
-
           (
             ./gradlew --no-daemon --stacktrace --info --console=plain \
               -Dorg.gradle.logging.stacktrace=all \
@@ -104,7 +114,6 @@ jobs:
               -Pandroid.injected.signing.key.password="${ANDROID_KEY_PASSWORD}" \
               :app:assembleRelease
           ) > >(tee -a ci-logs/02-assembleRelease.log) 2> >(tee -a ci-logs/02-assembleRelease.log >&2)
-
           echo $? > ci-logs/exitcode.txt
           set -e
         continue-on-error: true
