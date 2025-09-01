@@ -1,0 +1,49 @@
+android {
+    namespace "com.angeluz.freyja"
+    compileSdk 34
+
+    defaultConfig {
+        applicationId "com.angeluz.freyja"
+        minSdk 24
+        targetSdk 34
+        versionCode 1
+        versionName "1.0"
+    }
+
+    def ksPath = System.getenv("ANDROID_KEYSTORE_FILE")
+    def ksPass = System.getenv("ANDROID_KEYSTORE_PASSWORD")
+    def keyAlias = System.getenv("ANDROID_KEY_ALIAS")
+    def keyPass = System.getenv("ANDROID_KEY_PASSWORD")
+
+    def hasAll = ksPath && ksPass && keyAlias && keyPass && file(ksPath).exists()
+
+    signingConfigs {
+        if (hasAll) {
+            release {
+                storeFile file(ksPath)
+                storePassword ksPass
+                keyAlias keyAlias
+                keyPassword keyPass
+                enableV2Signing true
+                enableV3Signing true
+            }
+        }
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            if (hasAll) {
+                signingConfig signingConfigs.release
+            } else {
+                throw new GradleException(
+                    "❌ Faltan variables o archivo keystore para firmar release. " +
+                    "Exporta: ANDROID_KEYSTORE_FILE, ANDROID_KEYSTORE_PASSWORD, ANDROID_KEY_ALIAS, ANDROID_KEY_PASSWORD"
+                )
+            }
+        }
+        debug {
+            // Debug usa el keystore por defecto
+        }
+    }
+}
