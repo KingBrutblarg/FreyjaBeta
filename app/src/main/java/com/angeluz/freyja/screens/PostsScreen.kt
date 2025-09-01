@@ -1,3 +1,4 @@
+import com.angeluz.freyja.model.PostDto
 package com.angeluz.freyja.screens
 
 import androidx.compose.foundation.layout.*
