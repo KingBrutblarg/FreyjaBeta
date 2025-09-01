@@ -9,6 +9,7 @@ on:
 jobs:
   build:
     runs-on: ubuntu-22.04
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -19,12 +20,18 @@ jobs:
           distribution: temurin
           java-version: "17"
 
+      # setup-android v3 ya NO acepta api-level/build-tools/ndk como inputs.
+      # Usa `packages:` para instalar lo necesario del SDK.
       - name: Set up Android SDK
         uses: android-actions/setup-android@v3
         with:
-          api-level: 34
-          build-tools: "34.0.0"
-          ndk: 25.1.8937393
+          packages: |
+            tools
+            platform-tools
+            platforms;android-34
+            build-tools;34.0.0
+            ndk;25.1.8937393
+            cmake;3.22.1
 
       - name: Configure Gradle
         uses: gradle/actions/setup-gradle@v3
@@ -35,7 +42,6 @@ jobs:
       - name: Make gradlew executable
         run: chmod +x gradlew
 
-      # Debug (sin llaves, siempre compila)
       - name: Assemble Debug
         run: ./gradlew --no-daemon :app:assembleDebug
 
