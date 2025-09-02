@@ -8,6 +8,20 @@ android {
         targetSdk = 34
         versionCode = 1
         versionName = "1.0"
+android {
+    // ... tu configuración actual
+
+    applicationVariants.all {
+        val variantName = name
+        val capitalized = variantName.replaceFirstChar { it.uppercase() }
+        tasks.register<Copy>("copy${capitalized}ApkToDownloads") {
+            dependsOn("assemble$capitalized")
+            from("$buildDir/outputs/apk/$variantName")
+            include("*.apk")
+            into("${System.getenv("HOME")}/storage/downloads")
+        }
+    }
+}
     }
 
     // --- Firma condicional / estricta ---
