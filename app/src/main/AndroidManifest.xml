@@ -1,17 +1,21 @@
-<manifest package="com.angeluz.freyja" xmlns:android="http://schemas.android.com/apk/res/android">
-  <application
-      android:label="La Voz de Freyja (Standalone)"
-      android:allowBackup="true"
-      android:supportsRtl="true"
-      android:theme="@style/Theme.Freyja">
+<?xml version="1.0" encoding="utf-8"?>
+<manifest package="com.angeluz.freyja"
+    xmlns:android="http://schemas.android.com/apk/res/android">
 
-      <activity android:name=".StandaloneActivity" android:exported="true">
-          <intent-filter>
-              <action android:name="android.intent.action.MAIN"/>
-              <category android:name="android.intent.category.LAUNCHER"/>
-          </intent-filter>
-      </activity>
+    <!-- OkHttp/HTTP o localhost necesitan esto -->
+    <uses-permission android:name="android.permission.INTERNET"/>
 
-      <!-- Deja tu MainActivity y demás tal cual, sin intent-filter LAUNCHER -->
-  </application>
+    <application
+        android:label="Freyja"
+        android:icon="@mipmap/ic_launcher"
+        android:allowBackup="false">
+        <activity
+            android:name=".MainActivity"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN"/>
+                <category android:name="android.intent.category.LAUNCHER"/>
+            </intent-filter>
+        </activity>
+    </application>
 </manifest>
