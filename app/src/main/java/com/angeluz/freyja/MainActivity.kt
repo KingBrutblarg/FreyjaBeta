@@ -4,11 +4,11 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
+import com.angeluz.freyja.ui.screens.ChatScreen
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContent { MaterialTheme { Surface { Text("Freyja viva ✨") } } }
+        setContent { MaterialTheme { Surface { ChatScreen() } } }
     }
 }

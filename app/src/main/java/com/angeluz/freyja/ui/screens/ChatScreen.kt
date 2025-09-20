@@ -1,6 +1,17 @@
 package com.angeluz.freyja.ui.screens
 
-import androidx.compose.foundation.layout.*
+import android.content.Intent
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Button
@@ -8,9 +19,14 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -21,10 +37,24 @@ import com.angeluz.freyja.model.ChatMessage
 fun ChatScreen(vm: ChatViewModel = viewModel()) {
     var input by remember { mutableStateOf(TextFieldValue("")) }
     val messages: List<ChatMessage> = vm.messages
+    val context = LocalContext.current
+
+    val attachmentsLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.OpenDocument()
+    ) { uri ->
+        uri?.let {
+            runCatching {
+                context.contentResolver.takePersistableUriPermission(
+                    it,
+                    Intent.FLAG_GRANT_READ_URI_PERMISSION
+                )
+            }
+            vm.processFile(it)
+        }
+    }
 
     Surface(modifier = Modifier.fillMaxSize()) {
         Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
-
             LazyColumn(
                 modifier = Modifier.weight(1f).fillMaxWidth(),
                 reverseLayout = true
@@ -54,6 +84,8 @@ fun ChatScreen(vm: ChatViewModel = viewModel()) {
                 }
             }
 
+            Spacer(Modifier.height(12.dp))
+
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier.fillMaxWidth()
@@ -64,6 +96,12 @@ fun ChatScreen(vm: ChatViewModel = viewModel()) {
                     modifier = Modifier.weight(1f),
                     placeholder = { Text("Escribe…") }
                 )
+                Spacer(Modifier.width(8.dp))
+                Button(onClick = {
+                    attachmentsLauncher.launch(arrayOf("text/*", "application/pdf"))
+                }) {
+                    Text("Adjuntar")
+                }
                 Spacer(Modifier.width(8.dp))
                 Button(onClick = {
                     val msg = input.text.trim()
