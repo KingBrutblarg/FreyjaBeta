@@ -1,68 +1,91 @@
+plugins {
+    id("com.android.application")
+    id("org.jetbrains.kotlin.android")
+}
+
 android {
     namespace = "com.angeluz.freyja"
     compileSdk = 34
+    ndkVersion = "26.3.11579264"
 
     defaultConfig {
         applicationId = "com.angeluz.freyja"
-        minSdk = 24
+        minSdk = 26
         targetSdk = 34
-        versionCode = 1
-        versionName = "1.0"
-android {
-    // ... tu configuración actual
+        versionCode = 100
+        versionName = "0.9-Standalone"
 
-    applicationVariants.all {
-        val variantName = name
-        val capitalized = variantName.replaceFirstChar { it.uppercase() }
-        tasks.register<Copy>("copy${capitalized}ApkToDownloads") {
-            dependsOn("assemble$capitalized")
-            from("$buildDir/outputs/apk/$variantName")
-            include("*.apk")
-            into("${System.getenv("HOME")}/storage/downloads")
+        ndk { abiFilters += listOf("arm64-v8a") }
+
+        externalNativeBuild {
+            cmake {
+                cppFlags += "-std=c++17 -O3"
+            }
         }
     }
-}
+
+    compileOptions {
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
+    }
+    kotlinOptions {
+        jvmTarget = "17"
     }
 
-    // --- Firma condicional / estricta ---
-    val ksPath = System.getenv("ANDROID_KEYSTORE_FILE")
-    val ksPass = System.getenv("ANDROID_KEYSTORE_PASSWORD")
-    val keyAlias = System.getenv("ANDROID_KEY_ALIAS")
-    val keyPass = System.getenv("ANDROID_KEY_PASSWORD")
+    buildFeatures {
+        buildConfig = true
+        compose = true
+    }
+    composeOptions { kotlinCompilerExtensionVersion = "1.5.15" }
 
-    val hasAll = !ksPath.isNullOrBlank()
-            && !ksPass.isNullOrBlank()
-            && !keyAlias.isNullOrBlank()
-            && !keyPass.isNullOrBlank()
-            && file(ksPath!!).exists()
+    packaging {
+        jniLibs.useLegacyPackaging = true
+        resources.excludes += "/META-INF/{AL2.0,LGPL2.1}"
+    }
+
+    externalNativeBuild { cmake { path = file("src/main/cpp/CMakeLists.txt") } }
 
     signingConfigs {
-        if (hasAll) {
-            create("release") {
-                storeFile = file(ksPath!!)
-                storePassword = ksPass
-                this.keyAlias = keyAlias
-                keyPassword = keyPass
-                enableV2Signing = true
-                enableV3Signing = true
-            }
+        create("release") {
+            storeFile = file(System.getenv("ANDROID_KEYSTORE_PATH") ?: "freyja-release.keystore")
+            storePassword = System.getenv("ANDROID_KEYSTORE_PASSWORD")
+            keyAlias = System.getenv("ANDROID_KEY_ALIAS")
+            keyPassword = System.getenv("ANDROID_KEY_PASSWORD")
         }
     }
 
     buildTypes {
         getByName("release") {
             isMinifyEnabled = false
-            if (hasAll) {
-                signingConfig = signingConfigs.getByName("release")
-            } else {
-                throw GradleException(
-                    "❌ Faltan variables o archivo keystore para firmar release. " +
-                    "Exporta: ANDROID_KEYSTORE_FILE, ANDROID_KEYSTORE_PASSWORD, ANDROID_KEY_ALIAS, ANDROID_KEY_PASSWORD"
-                )
-            }
+            signingConfig = signingConfigs.getByName("release")
+
+            val apiBase = System.getenv("API_BASE_URL") ?: ""
+            val pass = System.getenv("BACKUP_PASSPHRASE") ?: ""
+            buildConfigField("String", "API_BASE_URL", "\"$apiBase\"")
+            buildConfigField("String", "BACKUP_PASSPHRASE", "\"$pass\"")
         }
         getByName("debug") {
-            // Debug queda con el keystore por defecto de Android
+            val apiBase = System.getenv("API_BASE_URL") ?: "http://10.0.2.2:8080"
+            val pass = System.getenv("BACKUP_PASSPHRASE") ?: "debug-pass"
+            buildConfigField("String", "API_BASE_URL", "\"$apiBase\"")
+            buildConfigField("String", "BACKUP_PASSPHRASE", "\"$pass\"")
         }
     }
+}
+
+dependencies {
+    implementation("androidx.documentfile:documentfile:1.0.1")
+    implementation("com.squareup.okhttp3:okhttp:4.12.0")
+
+    implementation(platform("androidx.compose:compose-bom:2024.09.02"))
+    implementation("androidx.activity:activity-compose:1.9.2")
+    implementation("androidx.compose.foundation:foundation")
+    implementation("androidx.compose.ui:ui")
+    implementation("androidx.compose.material3:material3")
+    implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.8.4")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.8.1")
+
+    implementation("androidx.activity:activity-ktx:1.9.2")
+    implementation("androidx.core:core-ktx:1.13.1")
+    implementation("com.google.android.material:material:1.12.0")
 }
